@@ -7,7 +7,7 @@ Prints to stdout, use > to pipe output to a file
 Author: Serena G. Lotreck
 """
 import argparse
-from os.path import abspath, basename, join
+from os.path import abspath, basename, join, splitext
 from os import listdir
 import warnings
 
@@ -84,7 +84,7 @@ def check_rel_matches(pred, gold_sent):
 
     Note that pred/gold are relative, can be swapped to get false negatives by
     comparing a "pred" from the gold standard against the "gold_sent" of
-    predictions from the model, as is done in get_f1_input.
+    predictions from the model, as is done in get_doc_rel_counts.
 
     parameters:
         pred, list: 4 integers (entity bounds) and a string (relation type)
@@ -120,7 +120,7 @@ def check_rel_matches(pred, gold_sent):
         return False
 
 
-def get_doc_ent_counts(doc, gold_std, ent_pos_neg):
+def get_doc_ent_counts(doc, gold_std, ent_pos_neg, mismatch_rows):
     """
     Get the true/false positives and false negatives for entity prediction for
     a single document.
@@ -133,11 +133,16 @@ def get_doc_ent_counts(doc, gold_std, ent_pos_neg):
         ent_pos_neg, dict: keys are "tp", "fp", "fn". Should keep passing the
             same object for each doc to get totals for the entire set of
             documents.
+        mismatch_rows, dict: empty dict or dict with mismatch_cols as keys and
+            lists as rows
 
     returns:
         ent_pos_neg, dict: updated match counts for entities
+        mismatch_rows, dict: empty dict if emtpy dict was passed, otherwise
+            updated mismatch_rows dict
     """
     # Go through each sentence for entities
+    sent_num = 0
     for pred_sent, gold_sent in zip(doc['predicted_ner'], gold_std['ner']):
         # Iterate through predictions and check for them in gold standard
         for pred in pred_sent:
@@ -145,6 +150,12 @@ def get_doc_ent_counts(doc, gold_std, ent_pos_neg):
             for gold_ent in gold_sent:
                 if pred[:2] == gold_ent[:2]:
                     ent_pos_neg['tp'] += 1
+                    if len(mismatch_rows.keys()) != 0:
+                        mismatch_rows['doc_key'].append(doc['doc_key'])
+                        mismatch_rows['mismatch_type'].append(1)
+                        mismatch_rows['sent_num'].append(sent_num)
+                        mismatch_rows['ent_list'].append(gold_ent)
+                        mismatch_rows['ent_type'].append(gold_ent[2])
                     found = True
             if not found:
                 ent_pos_neg['fp'] += 1
@@ -156,8 +167,15 @@ def get_doc_ent_counts(doc, gold_std, ent_pos_neg):
                     found = True
             if not found:
                 ent_pos_neg['fn'] += 1
+                if len(mismatch_rows.keys()) != 0:
+                    mismatch_rows['doc_key'].append(doc['doc_key'])
+                    mismatch_rows['mismatch_type'].append(0)
+                    mismatch_rows['sent_num'].append(sent_num)
+                    mismatch_rows['ent_list'].append(gold)
+                    mismatch_rows['ent_type'].append(gold[2])
+        sent_num += 1
 
-    return ent_pos_neg
+    return ent_pos_neg, mismatch_rows
 
 
 def get_doc_rel_counts(doc, gold_std, rel_pos_neg, doc_key):
@@ -206,7 +224,8 @@ def get_doc_rel_counts(doc, gold_std, rel_pos_neg, doc_key):
     return rel_pos_neg
 
 
-def get_f1_input(gold_standard_dicts, prediction_dicts, input_type):
+def get_f1_input(gold_standard_dicts, prediction_dicts, input_type,
+        mismatch_rows={}):
     """
     Get the number of true and false postives and false negatives for the
     model to calculate the following inputs for compute_f1 for both entities
@@ -220,10 +239,15 @@ def get_f1_input(gold_standard_dicts, prediction_dicts, input_type):
         prediction_dicts, list of dict: dygiepp formatted predictions
         input_type, str: 'ent' or 'rel', determines which of the prediction
             types will be evaluated
+        mismatch_rows, dict: empty dict (default) or dict where keys are
+            columns for mismatch_df. Only used if not an empty dict.
+
     returns:
         predicted, int
         gold, int
         matched, int
+        mismatch_rows, dict: empty dict if empty dict was passed, updated
+            mismatch_rows dict if dict with keys was passed
     """
     pos_neg = {'tp':0, 'fp':0, 'fn':0}
 
@@ -235,7 +259,7 @@ def get_f1_input(gold_standard_dicts, prediction_dicts, input_type):
         gold_std = gold_standard_dict[doc['doc_key']]
         # Get tp/fp/fn counts for this document
         if input_type == 'ent':
-            pos_neg = get_doc_ent_counts(doc, gold_std, pos_neg)
+            pos_neg, mismatch_rows = get_doc_ent_counts(doc, gold_std, pos_neg, mismatch_rows)
 
         elif input_type == 'rel':
             pos_neg = get_doc_rel_counts(doc, gold_std, pos_neg, doc["doc_key"])
@@ -244,7 +268,7 @@ def get_f1_input(gold_standard_dicts, prediction_dicts, input_type):
     gold = pos_neg['tp'] + pos_neg['fn']
     matched = pos_neg['tp']
 
-    return (predicted, gold, matched)
+    return (predicted, gold, matched, mismatch_rows)
 
 
 def draw_boot_samples(pred_dicts, gold_std_dicts, num_boot, input_type):
@@ -277,7 +301,7 @@ def draw_boot_samples(pred_dicts, gold_std_dicts, num_boot, input_type):
         # docs in gold std
         gold_samp = np.array([gold_std_dicts[i] for i in idx_list])
         # Calculate performance for the sample
-        pred, gold, match = get_f1_input(gold_samp, pred_samp, input_type)
+        pred, gold, match, _ = get_f1_input(gold_samp, pred_samp, input_type)
         prec, rec, f1 = compute_f1(pred, gold, match)
         # Append each of the performance values to their respective sample lists
         prec_samples.append(prec)
@@ -287,7 +311,8 @@ def draw_boot_samples(pred_dicts, gold_std_dicts, num_boot, input_type):
     return (prec_samples, rec_samples, f1_samples)
 
 
-def get_performance_row(pred_file, gold_std_file, bootstrap, num_boot, df_rows):
+def get_performance_row(pred_file, gold_std_file, bootstrap, num_boot, df_rows,
+        mismatch_rows):
     """
     Gets performance metrics and returns as a list.
 
@@ -298,9 +323,13 @@ def get_performance_row(pred_file, gold_std_file, bootstrap, num_boot, df_rows):
         num_boot, int: if bootstrap is True, how many bootstrap samples to take
         df_rows, dict: keys are column names, values are lists of performance
             values and CIs to which new results will be appended
+        mismatch_rows, dict: if save_mismatches, keys are mismatch col names,
+            values are lists. Else, empty dict
 
     returns:
         df_rows, dict: df_rows updated with new row values
+        mismatch_rows, dict: mismtach_updated if save_mismatches, else empty
+            dict
     """
     # Read in the files
     gold_std_dicts = []
@@ -390,10 +419,11 @@ def get_performance_row(pred_file, gold_std_file, bootstrap, num_boot, df_rows):
 
     else:
         # Calculate performance
-        pred_ent, gold_ent, match_ent = get_f1_input(gold_std_dicts, pred_dicts, 'ent')
+        pred_ent, gold_ent, match_ent, mismatch_rows = get_f1_input(gold_std_dicts,
+                pred_dicts, 'ent', mismatch_rows)
         ent_means = compute_f1(pred_ent, gold_ent, match_ent)
         if pred_rels:
-            pred_rel, gold_rel, match_rel = get_f1_input(gold_std_dicts,
+            pred_rel, gold_rel, match_rel, _ = get_f1_input(gold_std_dicts,
                     pred_dicts,
                     'rel')
             rel_means = compute_f1(pred_rel, gold_rel, match_rel)
@@ -409,10 +439,11 @@ def get_performance_row(pred_file, gold_std_file, bootstrap, num_boot, df_rows):
         df_rows['rel_recall'].append(rel_means[1])
         df_rows['rel_F1'].append(rel_means[2])
 
-        return df_rows
+        return df_rows, mismatch_rows
 
 
-def main(gold_standard, out_name, predictions, bootstrap, num_boot):
+def main(gold_standard, out_name, predictions, bootstrap, num_boot,
+        save_mismatches):
 
     # Calculate performance
     verboseprint('\nCalculating performance...')
@@ -425,10 +456,33 @@ def main(gold_standard, out_name, predictions, bootstrap, num_boot):
         cols = ['pred_file', 'gold_std_file', 'ent_precision', 'ent_recall',
                 'ent_F1', 'rel_precision', 'rel_recall', 'rel_F1']
     df_rows = {k:[] for k in cols}
+    if save_mismatches:
+        # 'mismatch_type' column: 1 if the model correctly matched the gold
+        # standard (true positive), 0 if the model failed to match the gold
+        # standard (false negative)
+        # doc_key + sent_num + ent_list allows recovery of the text of the
+        # entity later on, while ent_type makes type access easier
+        mismatch_cols = ['doc_key', 'mismatch_type', 'sent_num', 'ent_list',
+                        'ent_type', 'model']
+        mismatch_rows = {k:[] for k in mismatch_cols}
+    else:
+        # To avoid having to add too much code, if the user doesn't want
+        # mismatches, will just add nothing to an empty dict to allow the same
+        # returns
+        mismatch_rows = {}
+
     for model in predictions:
         verboseprint(f'\nEvaluating model predictions from file {model}...')
-        df_rows = get_performance_row(model, gold_standard,
-                                           bootstrap, num_boot, df_rows)
+        df_rows, mismatch_rows = get_performance_row(model, gold_standard,
+                                           bootstrap, num_boot, df_rows,
+                                           mismatch_rows)
+        # Add the model string onto the mismatch_rows df
+        mismatch_col_lens = list(set([len(v) for k, v in
+            mismatch_rows.items()]))
+        assert len(mismatch_col_lens) == 2
+        missing_model_name_num = abs(mismatch_col_lens[0] - mismatch_col_lens[1])
+        missing_model_names = [model for i in range(missing_model_name_num)]
+        mismatch_rows['model'].extend(missing_model_names)
 
     # Make df
     verboseprint('\nMaking dataframe...')
@@ -437,9 +491,19 @@ def main(gold_standard, out_name, predictions, bootstrap, num_boot):
         columns=cols)
     verboseprint(f'Snapshot of dataframe:\n{df.head()}')
 
+    # Make mismatch df if specified
+    if save_mismatches:
+        verboseprint('\nMaking mismatch dataframe...')
+        mismatch_df = pd.DataFrame(mismatch_rows, columns=mismatch_cols)
+        verboseprint(f'Snapshot of dataframe:\n{mismatch_df.head()}')
+
     # Save
-    verboseprint(f'\nSaving file as {out_name}')
+    verboseprint(f'\nSaving performance file as {out_name}')
     df.to_csv(out_name, index=False)
+    if save_mismatches:
+        mismatch_out_name = splitext(out_name)[0] + '_MISMATCHES.csv'
+        verboseprint(f'\nSaving mismatch file as {mismatch_out_name}')
+        mismatch_df.to_csv(mismatch_out_name, index=False)
 
     verboseprint('\nDone!\n')
 
@@ -474,12 +538,21 @@ if __name__ == "__main__":
         help='If a prefix is provided, only calculates performance for '
         'files beginning with the prefix in the directory.',
         default='')
+    parser.add_argument('--save_mismatches', action='store_true',
+            help='Whether or not to save the types and numbers of  mismatches '
+            'for all models. To be used in downstream analysis. Can only be '
+            'specified if --bootstrap is not specified.')
     parser.add_argument('--verbose',
                         '-v',
                         action='store_true',
                         help='If provided, script progress will be printed')
 
     args = parser.parse_args()
+
+    if args.save_mismatches:
+        assert not args.bootstrap, ('--save_mismatches and --bootstrap '
+                'cannot be specified together, please remove --bootstrap if '
+                'you would like to use --save_mismatches')
 
     args.gold_standard = abspath(args.gold_standard)
     args.out_name = abspath(args.out_name)
@@ -492,4 +565,5 @@ if __name__ == "__main__":
         if f.startswith(args.use_prefix)
     ]
 
-    main(args.gold_standard, args.out_name, pred_files, args.bootstrap, args.num_boot)
+    main(args.gold_standard, args.out_name, pred_files, args.bootstrap,
+            args.num_boot, args.save_mismatches)
