@@ -1,6 +1,6 @@
 """
 Calculates statistics for a set of brat-formatted annotated documents in a
-given directory. Calculates total # annotations, mean/median/max/min per
+given directory. Calculates total # annotations, mean/sd/median/max/min per
 document, and total number of tokens/sentences in corpus and per document.
 
 Author: Serena G. Lotreck
@@ -40,14 +40,15 @@ def get_text_stats(corpus_dir):
     num_tokens_per_doc = [len(nlp(doc)) for doc in files.values()]
 
     # Compile into overall stats
-    text_stats_names = ['total_num', 'mean_per_doc', 'median_per_doc',
-        'max_per_doc', 'min_per_doc']
+    text_stats_names = ['total_num', 'mean_per_doc', 'std_per_doc',
+            'median_per_doc', 'max_per_doc', 'min_per_doc']
     text_stats_dict = {'sentences':[sum(num_sents_per_doc),
-        np.mean(num_sents_per_doc), np.median(num_sents_per_doc),
-        max(num_sents_per_doc), min(num_sents_per_doc)],
+        np.mean(num_sents_per_doc), np.std(num_sents_per_doc),
+        np.median(num_sents_per_doc), max(num_sents_per_doc),
+        min(num_sents_per_doc)],
         "tokens":[sum(num_tokens_per_doc), np.mean(num_tokens_per_doc),
-            np.median(num_tokens_per_doc), max(num_tokens_per_doc),
-            min(num_tokens_per_doc)]}
+            np.std(num_tokens_per_doc), np.median(num_tokens_per_doc),
+            max(num_tokens_per_doc), min(num_tokens_per_doc)]}
 
     # Make into df with names as idx
     idx = pd.Index(text_stats_names)
@@ -92,15 +93,18 @@ def get_annotation_stats(corpus_dir):
 
     # Compile into overall stats
     ann_stats_names = ['total_num_anns', 'mean_anns_per_doc',
-            'med_anns_per_doc', 'max_anns_per_doc', 'min_anns_per_doc']
+            'std_anns_per_doc', 'med_anns_per_doc', 'max_anns_per_doc',
+            'min_anns_per_doc']
 
     ents_per_doc = [val[0] for key, val in single_doc_anns.items()]
     rels_per_doc = [val[1] for key, val in single_doc_anns.items()]
 
     corpus_stats ={'entities':[sum(ents_per_doc), np.mean(ents_per_doc),
-        np.median(ents_per_doc), max(ents_per_doc), min(ents_per_doc)],
+        np.std(ents_per_doc), np.median(ents_per_doc), max(ents_per_doc),
+        min(ents_per_doc)],
     'relations':[sum(rels_per_doc), np.mean(rels_per_doc),
-        np.median(rels_per_doc), max(rels_per_doc), min(rels_per_doc)]}
+        np.std(rels_per_doc), np.median(rels_per_doc), max(rels_per_doc),
+        min(rels_per_doc)]}
 
     # Make into df with names as index
     idx = pd.Index(ann_stats_names)

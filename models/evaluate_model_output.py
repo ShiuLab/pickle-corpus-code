@@ -415,7 +415,7 @@ def get_performance_row(pred_file, gold_std_file, bootstrap, num_boot, df_rows,
         df_rows['rel_recall_CI'].append(rel_CIs[1])
         df_rows['rel_F1_CI'].append(rel_CIs[2])
 
-        return df_rows
+        return df_rows, {}
 
     else:
         # Calculate performance
@@ -476,13 +476,14 @@ def main(gold_standard, out_name, predictions, bootstrap, num_boot,
         df_rows, mismatch_rows = get_performance_row(model, gold_standard,
                                            bootstrap, num_boot, df_rows,
                                            mismatch_rows)
-        # Add the model string onto the mismatch_rows df
-        mismatch_col_lens = list(set([len(v) for k, v in
-            mismatch_rows.items()]))
-        assert len(mismatch_col_lens) == 2
-        missing_model_name_num = abs(mismatch_col_lens[0] - mismatch_col_lens[1])
-        missing_model_names = [model for i in range(missing_model_name_num)]
-        mismatch_rows['model'].extend(missing_model_names)
+        if save_mismatches:
+            # Add the model string onto the mismatch_rows df
+            mismatch_col_lens = list(set([len(v) for k, v in
+                mismatch_rows.items()]))
+            assert len(mismatch_col_lens) == 2
+            missing_model_name_num = abs(mismatch_col_lens[0] - mismatch_col_lens[1])
+            missing_model_names = [model for i in range(missing_model_name_num)]
+            mismatch_rows['model'].extend(missing_model_names)
 
     # Make df
     verboseprint('\nMaking dataframe...')
