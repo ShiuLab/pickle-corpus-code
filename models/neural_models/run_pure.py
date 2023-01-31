@@ -155,7 +155,7 @@ def run_models(model_paths, new_data_path, pure_path, top_dir,
         prev_model_path = unzipped_model_path
 
 
-def format_data(data_path, top_dir):
+def format_pure_data(data_path, top_dir):
     """
     Make a new copy of the data on which to run the models, removing
     or adding an empty set of annotation fields, and removing the
@@ -311,7 +311,7 @@ def main(data_path, gold_std_path, pure_path, top_dir, out_prefix, model_path,
     # Format data
     if format_data:
         verboseprint('\nFormatting data...')
-        new_data_path = format_data(data_path, top_dir)
+        new_data_path = format_pure_data(data_path, top_dir)
     else:
         new_name = f'{top_dir}/formatted_data/dev.json'
         copy = f'cp {data_path} {new_name}'
