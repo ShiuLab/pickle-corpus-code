@@ -229,8 +229,8 @@ def check_make_filetree(top_dir):
         return False
 
 
-def main(top_dir, out_prefix, dygiepp_path, format_data, data, 
-         gold_standard, models_to_run):
+def main(top_dir, out_prefix, dygiepp_path, format_data, data,
+         gold_standard, no_eval, models_to_run):
 
     # Check if the top_dir & other folders exist already
     verboseprint('\nChecking if file tree exists and creating it if not...')
@@ -266,8 +266,9 @@ def main(top_dir, out_prefix, dygiepp_path, format_data, data,
                   out_prefix)
 
     # Evaluate
-    verboseprint('\nEvaluating models...')
-    evaluate_models(top_dir, gold_standard, out_prefix)
+    if not no_eval:
+        verboseprint('\nEvaluating models...')
+        evaluate_models(top_dir, gold_standard, out_prefix)
 
     verboseprint('\n\nDone!\n\n')
 
@@ -309,6 +310,8 @@ if __name__ == "__main__":
         type=str,
         help='Path to gold standard for model evaulation. Models are '
         'evaluated using the script evaluate_model_output.py.')
+    parser.add_argument('--no_eval', action='store_false',
+            help='Pass to skip evaluating the data.')
     parser.add_argument(
         '-models_to_run',
         nargs='+',
@@ -334,4 +337,4 @@ if __name__ == "__main__":
     verboseprint = print if args.verbose else lambda *a, **k: None
 
     main(args.top_dir, args.out_prefix, args.dygiepp_path, args.format_data,
-         args.data,  args.gold_standard, args.models_to_run)
+         args.data,  args.gold_standard, args.no_eval, args.models_to_run)
