@@ -1,0 +1,18 @@
+{
+    "Gene": "DNA",
+    "Gene_Family": "DNA",
+    "Box": "Polynucleotide",
+    "Promoter": "Polynucleotide",
+    "RNA": "RNA",
+    "Protein": "Protein",
+    "Protein_Family": "Protein",
+    "Protein_Complex": "Protein",
+    "Protein_Domain": "Peptide",
+    "Hormone": "Plant_hormone",
+    "Regulatory_Network": "Biochemical_process",
+    "Pathway": "Biochemical_pathway",
+    "Genotype": "Multicellular_organism",
+    "Tissue": "Tissue",
+    "Development_Phase": "Biochemical_process",
+    "Environmental_Factor": ""
+}

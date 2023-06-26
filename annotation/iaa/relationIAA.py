@@ -56,7 +56,10 @@ def get_iaa_stats(annotator_pairs_iaas, out_loc, prefix):
                 for outerKey, innerDict in annotator_pairs_iaas.items()
                 for innerKey, values in innerDict.items()}
     iaas_df = pd.DataFrame(reformed).T.rename({0: 'iaa'}, axis=1)
-
+    print('\n\n\n\n\n HELLO HELLO HELLO \n\n\n\n\n\n')
+    val_lens = [len(v) for v in annotator_pairs_iaas.values()]
+    print(f'input dict dimensions are {len(annotator_pairs_iaas.keys())} keys and for each key there are {set(val_lens)}')
+    print(iaas_df.index)
     # Get the per-document iaa
     per_doc = iaas_df.groupby(level=1).agg({'iaa': ['mean', 'std']})
 
@@ -544,7 +547,7 @@ if __name__ == '__main__':
         'tolerance',
         type=str,
         help='What tolerance to use for the calculation. Options are '
-        'STRICT, SEMI-STRICT, RELATION-LOOSE, ENTITY-LOOSE')
+        'STRICT, LOOSE')
     parser.add_argument('out_loc', type=str, help='Path to save the output')
     parser.add_argument('prefix', type=str, help='Prefix for saved files')
 

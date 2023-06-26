@@ -8,7 +8,7 @@ import os
 import unittest
 
 import sys
-sys.path.append('../data_retrieval/doc_clustering')
+sys.path.append('../annotation/abstract_scripts/')
 import check_overlap as chk
 
 class TestoverlapFunctions(unittest.TestCase):

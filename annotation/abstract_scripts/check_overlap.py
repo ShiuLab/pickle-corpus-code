@@ -12,7 +12,7 @@ import argparse
 
 def compare_two_dirs(dir1_names, dir2_names):
     """
-    Compares two lists of base file names (strings) obtained from data 
+    Compares two lists of base file names (strings) obtained from data
     directories for overlap. Returns a list of the overlapping abstract names.
 
     parameters:
@@ -20,14 +20,14 @@ def compare_two_dirs(dir1_names, dir2_names):
         dir2_names, list of str: list of basenames from dir2
 
     returns:
-        a list of str that are names of overlapping abstracts, if there are 
+        a list of str that are names of overlapping abstracts, if there are
             overlaps, otherwise, returns the string 'No data overlap!'
     """
     # Do a simple boolean check, if True, get specific names
-    
+
     dir1_set = set(dir1_names)
     dir2_set = set(dir2_names)
-    
+
     if bool(dir1_set & dir2_set):
         return list(dir1_set & dir2_set)
     else:
@@ -39,16 +39,16 @@ def get_names(tr, te, ap):
     Gets the file names in the directories for each dataset.
 
     parameters:
-        tr, te, ap: str, paths to directories with data to compare 
+        tr, te, ap: str, paths to directories with data to compare
 
     returns:
-        fnames, dict of list of str: keys are dataset names, values 
+        fnames, dict of list of str: keys are dataset names, values
             are lists of the base file names in each dataset
     """
     dsets = {'train':tr, 'test':te, 'apply':ap}
     fnames = {}
     for name, dataset in dsets.items():
-        files = [f for f in os.listdir(dataset) 
+        files = [f for f in os.listdir(dataset)
                 if os.path.isfile(os.path.join(dataset, f))]
         basenames = [os.path.splitext(f)[0] for f in files]
         assert len(basenames) > 0, f'The {name} directory is empty!'
@@ -64,12 +64,12 @@ def main(tr, te, ap, out_loc):
 
     # Check for overlap 
     dsets = {'train':tr, 'test':te, 'apply':ap}
-    comparisons = [] 
-    for i,x in enumerate(dsets.keys()): 
+    comparisons = []
+    for i,x in enumerate(dsets.keys()):
         for j,y in enumerate(dsets.keys()):
             if (y, x) not in comparisons and i != j:
                 comparisons.append((x,y))
-    
+
     overlaps = {}
     for dir1, dir2 in comparisons:
         print('---------------------------------------')
@@ -78,7 +78,7 @@ def main(tr, te, ap, out_loc):
         if overlap != 'No data overlap!':
             print(f'Overlap found between {dir1} and {dir2}. See output '
                     'file for details.\n')
-        else: 
+        else:
             print('No overlap found!\n')
         overlaps[f'{dir1}-{dir2}'] = overlap
 
@@ -95,13 +95,13 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Check for document overlap in datasets.')
 
-    parser.add_argument('-tr','--train_dir', type=str, 
+    parser.add_argument('-tr','--train_dir', type=str,
             help='Path to directory containing training data.')
     parser.add_argument('-te', '--test_dir', type=str,
             help='Path to directory containing test data.')
-    parser.add_argument('-ap', '--apply_dir', type=str, 
+    parser.add_argument('-ap', '--apply_dir', type=str,
             help='Path to directory containing training data')
-    parser.add_argument('-out_loc', type=str, 
+    parser.add_argument('-out_loc', type=str,
             help='Path to save output file')
 
     args = parser.parse_args()
