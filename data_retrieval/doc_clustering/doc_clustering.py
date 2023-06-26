@@ -66,7 +66,7 @@ if __name__ == '__main__':
     args.data = abspath(args.data)
     args.out_loc = abspath(args.out_loc)
     if args.use_trained != 'False':
-        args.use_trained = os.path.abspath(args.use_trained)
+        args.use_trained = abspath(args.use_trained)
     else: args.use_trained = False
 
     main(args.data, args.num_abstracts, args.out_loc, args.new_dir_name, 
