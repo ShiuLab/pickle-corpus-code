@@ -1,0 +1,30 @@
+#!/bin/bash --login
+########## SBATCH Lines for Resource Request ##########
+
+#SBATCH --time=03:59:59             # limit of wall clock time
+#SBATCH --nodes=1             	    # number of different nodes
+#SBATCH --cpus-per-task=2           # number of CPUs (or cores) per task (same as -c)
+#SBATCH --mem-per-cpu=25G           # memory required per allocated CPU (or core)
+#SBATCH --gpus=v100:3
+#SBATCH --job-name YYYY_XXXX
+#SBATCH -e YYYY_XXXX.e
+#SBATCH -o YYYY_XXXX.o
+########## Command Lines for Job Running ##########
+
+module load CUDA/9.2.88
+module load Anaconda/3
+
+cd ~/Shiu_lab/dygiepp
+
+conda activate dygiepp
+
+bash scripts/train.sh YYYY_train_XXXX
+
+allennlp predict ~/Shiu_lab/dygiepp/models/YYYY_train_XXXX/ \
+	    ZZZZ \
+    	--predictor dygie \
+	    --include-package dygie \
+    	--use-dataset-reader \
+    	--output-file predictions/YYYY_XXXX.jsonl \
+    	--cuda-device 0 \
+    	--silent
