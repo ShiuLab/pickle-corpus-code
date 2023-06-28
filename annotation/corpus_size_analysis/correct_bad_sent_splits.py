@@ -122,7 +122,7 @@ def main(dataset):
     print('\nDetecting and correcting errors...')
     corrected_dset = []
     num_corrected = 0
-    for doc in tqdm(dset):
+    for doc in dset:
         corrected_doc = check_correct_doc(doc)
         if corrected_doc != doc:
             num_corrected += 1
