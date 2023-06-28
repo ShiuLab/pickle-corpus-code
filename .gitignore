@@ -2,3 +2,6 @@ jupyter_notebooks/.ipynb_checkpoints
 data/
 __pycache__
 job_scripts
+models/corpus_comparison
+*.o
+*.e

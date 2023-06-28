@@ -19,7 +19,7 @@ def main(full_corpus_path, dataset_name, dygiepp_path, config_template,
                                         num_train_subsets, dev_size, test_size,
                                         dataset_name, out_loc)
 
-    #Read in templates
+    # Read in templates
     with open(config_template) as myf:
         config = myf.read()
     with open(train_job_template) as myf:
@@ -32,7 +32,7 @@ def main(full_corpus_path, dataset_name, dygiepp_path, config_template,
         current_config = config.replace('XXXX', tset)
         current_config = current_config.replace('YYYY', dev_name)
         current_config = current_config.replace('ZZZZ', test_name)
-        train_base = splitext(basename(tset)[1])[0]
+        train_base = splitext(basename(tset))[0]
         current_conf_name = f'{dygiepp_path}/training_config/{train_base}.jsonnet'
         with open(current_conf_name, 'w') as myf:
             myf.write(current_config)
@@ -47,7 +47,7 @@ def main(full_corpus_path, dataset_name, dygiepp_path, config_template,
             myf.write(current_train_job)
 
         # Submit job
-        #run(['sbatch', current_train_name])
+        run(['sbatch', current_train_name])
 
 
 if __name__ == "__main__":

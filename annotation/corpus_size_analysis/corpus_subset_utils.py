@@ -53,7 +53,6 @@ def subset_corpus(corpus_path, start_size, subset_size, num_subs, dev_size,
 
     # Establish base training set
     trainsets = []
-    print(-start_size)
     train = full_corpus[-start_size:]
     del full_corpus[-start_size:]
     base_train_name = f'{out_loc}/{dataset_name}_train_{start_size}.jsonl'
@@ -69,7 +68,6 @@ def subset_corpus(corpus_path, start_size, subset_size, num_subs, dev_size,
         del full_corpus[-subset_size:]
         train += add_train
         next_name = f'{out_loc}/{dataset_name}_train_{len(train)}.jsonl'
-        print(f'len train: {len(train)}')
         trainsets.append(next_name)
         with jsonlines.open(next_name, 'w') as writer:
             writer.write_all(train)
