@@ -62,7 +62,7 @@ def subset_corpus(corpus_path, start_size, subset_size, num_subs, dev_size,
 
     # Then do repeated increments for train set
     for i in range(num_subs):
-        assert len(full_corpus) > subset_size, ('There are no more documents '
+        assert len(full_corpus) >= subset_size, ('There are no more documents '
                 'left in the corpus!')
         add_train = full_corpus[-subset_size:]
         del full_corpus[-subset_size:]
