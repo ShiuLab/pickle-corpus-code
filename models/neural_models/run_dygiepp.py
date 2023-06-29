@@ -316,10 +316,11 @@ if __name__ == "__main__":
         '-models_to_run',
         nargs='+',
         help='List of models to run. Options are ace05-relation, scierc, '
-        'scierc-lightweight, genia, and genia-lightweight. Default is all.',
+        'scierc-lightweight, genia, genia-lightweight and chemprot. Default '
+        'is all.',
         default=[
             'ace05-relation', 'scierc', 'scierc-lightweight', 'genia',
-            'genia-lightweight'
+            'genia-lightweight', 'chemprot'
         ])
     parser.add_argument(
         '-v',
