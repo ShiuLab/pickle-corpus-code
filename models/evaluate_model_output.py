@@ -1,8 +1,6 @@
 """
-Given the output of a model in DyGIE++ format and a gold standard entity set,
-calculate precision, recall and F1 for entity prediction.
-
-Prints to stdout, use > to pipe output to a file
+Given the output of a model in DyGIE++ format and a gold standard annotation,
+calculate precision, recall and F1 for entity and relation prediction.
 
 Author: Serena G. Lotreck
 """
@@ -34,11 +32,13 @@ def calculate_CI(prec_samples, rec_samples, f1_samples):
     """
     alpha = 0.05
     CIs = {}
-    for name, samp_set in {'prec_samples':prec_samples,
-                           'rec_samples':rec_samples,
-                           'f1_samples':f1_samples}.items():
-        lower_bound = np.percentile(samp_set, 100*(alpha/2))
-        upper_bound = np.percentile(samp_set, 100*(1-alpha/2))
+    for name, samp_set in {
+            'prec_samples': prec_samples,
+            'rec_samples': rec_samples,
+            'f1_samples': f1_samples
+    }.items():
+        lower_bound = np.percentile(samp_set, 100 * (alpha / 2))
+        upper_bound = np.percentile(samp_set, 100 * (1 - alpha / 2))
         name = name.split('_')[0] + '_CI'
         CIs[name] = (lower_bound, upper_bound)
 
@@ -70,15 +70,16 @@ def eliminate_rel_dups(sent, doc_key, sent_type):
     """
     aset = set([tuple(rel) for rel in sent])
     if len(sent) != len(aset):
-        warnings.warn(f'\nAt least one sentence in {doc_key}\'s {sent_type} '
-                'for this model contains exact duplicates. These will be '
-                'ignored when calculating performance.')
+        warnings.warn(
+            f'\nAt least one sentence in {doc_key}\'s {sent_type} '
+            'for this model contains exact duplicates. These will be '
+            'ignored when calculating performance.')
         sent = [list(rel) for rel in aset]
 
     return sent
 
 
-def check_rel_matches(pred, gold_sent):
+def check_rel_matches(pred, gold_sent, check_types=False):
     """
     Checks for order-agnostic matches of pred in gold_sent.
 
@@ -90,29 +91,40 @@ def check_rel_matches(pred, gold_sent):
         pred, list: 4 integers (entity bounds) and a string (relation type)
         gold_sent, list of list: internal lists are relation representations
             with the same format as pred
+        check_types, bool: Whether or not to consider types in evaluations
 
     returns:
         True if an order-agnostic match exists in gold_sent, False otherwise
     """
     # Make all gold rels into strings of chars to make it easier to
     # search for character pairs
+    vals_compare = 4 if not check_types else 5
     gold_rel_strs = []
     for rel in gold_sent:
-        rel_str = ' '.join([str(i) for i in rel[:4]])
+        rel_str = ' '.join([str(i) for i in rel[:vals_compare]])
         gold_rel_strs.append(rel_str)
     # Make each ent in the predicted rel into a separate string so
     # we can search order-agnostically
     pred_ent_1_str = ' '.join([str(i) for i in pred[:2]])
     pred_ent_2_str = ' '.join([str(i) for i in pred[2:4]])
+    pred_rel_type = pred[4]
     # Check if ent 1 is in one of the relations
-    ent1_list = [True if pred_ent_1_str
-            in i else False for i in gold_rel_strs]
+    ent1_list = [True if pred_ent_1_str in i else False for i in gold_rel_strs]
     # Check if ent 2 is in one of the relations
-    ent2_list = [True if pred_ent_2_str in i
-            else False for i in gold_rel_strs]
+    ent2_list = [True if pred_ent_2_str in i else False for i in gold_rel_strs]
+    # Check if the relation type is in one of the relations
+    type_list = [True if pred_rel_type in i else False for i in gold_rel_strs]
     # Indices that both have True in them are matches
-    matches_list = [True if (ent1_list[i] & ent2_list[i]) else False
-            for i in range(len(gold_rel_strs))]
+    if not check_types:
+        matches_list = [
+            True if (ent1_list[i] & ent2_list[i]) else False
+            for i in range(len(gold_rel_strs))
+        ]
+    else:
+        matches_list = [
+            True if (ent1_list[i] & ent2_list[i] & type_list[i]) else False
+            for i in range(len(gold_rel_strs))
+            ]
     # Determine return type
     if matches_list.count(True) >= 1:
         return True
@@ -120,7 +132,8 @@ def check_rel_matches(pred, gold_sent):
         return False
 
 
-def get_doc_ent_counts(doc, gold_std, ent_pos_neg, mismatch_rows):
+def get_doc_ent_counts(doc, gold_std, ent_pos_neg, mismatch_rows,
+        check_types=False):
     """
     Get the true/false positives and false negatives for entity prediction for
     a single document.
@@ -135,12 +148,14 @@ def get_doc_ent_counts(doc, gold_std, ent_pos_neg, mismatch_rows):
             documents.
         mismatch_rows, dict: empty dict or dict with mismatch_cols as keys and
             lists as rows
+        check_types, bool: Whether or not to consider types in evaluations
 
     returns:
         ent_pos_neg, dict: updated match counts for entities
         mismatch_rows, dict: empty dict if emtpy dict was passed, otherwise
             updated mismatch_rows dict
     """
+    vals_compare = 2 if not check_types else 3
     # Go through each sentence for entities
     sent_num = 0
     for pred_sent, gold_sent in zip(doc['predicted_ner'], gold_std['ner']):
@@ -148,7 +163,7 @@ def get_doc_ent_counts(doc, gold_std, ent_pos_neg, mismatch_rows):
         for pred in pred_sent:
             found = False
             for gold_ent in gold_sent:
-                if pred[:2] == gold_ent[:2]:
+                if pred[:vals_compare] == gold_ent[:vals_compare]:
                     ent_pos_neg['tp'] += 1
                     if len(mismatch_rows.keys()) != 0:
                         mismatch_rows['doc_key'].append(doc['doc_key'])
@@ -163,7 +178,7 @@ def get_doc_ent_counts(doc, gold_std, ent_pos_neg, mismatch_rows):
         for gold in gold_sent:
             found = False
             for pred in pred_sent:
-                if gold[:2] == pred[:2]:
+                if gold[:vals_compare] == pred[:vals_compare]:
                     found = True
             if not found:
                 ent_pos_neg['fn'] += 1
@@ -178,7 +193,7 @@ def get_doc_ent_counts(doc, gold_std, ent_pos_neg, mismatch_rows):
     return ent_pos_neg, mismatch_rows
 
 
-def get_doc_rel_counts(doc, gold_std, rel_pos_neg, doc_key):
+def get_doc_rel_counts(doc, gold_std, rel_pos_neg, doc_key, check_types=False):
     """
     Get the true/false positives and false negatives for relation prediction for
     a single document.
@@ -193,13 +208,14 @@ def get_doc_rel_counts(doc, gold_std, rel_pos_neg, doc_key):
             documents.
         doc_key, str: doc ID, to use for warning if there are exact duplicate
             relations in any of the sentences
+        check_types, bool: Whether or not to consider types in evaluations
 
     returns:
         rel_pos_neg, dict: updated match counts for relations
     """
     # Go through each sentence for relations
     for pred_sent, gold_sent in zip(doc['predicted_relations'],
-            gold_std['relations']):
+                                    gold_std['relations']):
         # Check for and eliminate duplicates, with warning
         pred_sent = eliminate_rel_dups(pred_sent, doc_key, "predictions")
         gold_sent = eliminate_rel_dups(gold_sent, doc_key, "gold standard")
@@ -207,7 +223,7 @@ def get_doc_rel_counts(doc, gold_std, rel_pos_neg, doc_key):
         # standard. Need to allow for the relations to be in a different
         # order than in the gold standard
         for pred in pred_sent:
-            matched = check_rel_matches(pred, gold_sent)
+            matched = check_rel_matches(pred, gold_sent, check_types)
             if matched:
                 rel_pos_neg['tp'] += 1
             else:
@@ -215,7 +231,7 @@ def get_doc_rel_counts(doc, gold_std, rel_pos_neg, doc_key):
         # Iterate through gold standard and check for them in predictions.
         # Still need to allow for the relations to be in a different order.
         for gold in gold_sent:
-            matched = check_rel_matches(gold, pred_sent)
+            matched = check_rel_matches(gold, pred_sent, check_types)
             if matched:
                 continue
             else:
@@ -224,8 +240,10 @@ def get_doc_rel_counts(doc, gold_std, rel_pos_neg, doc_key):
     return rel_pos_neg
 
 
-def get_f1_input(gold_standard_dicts, prediction_dicts, input_type,
-        mismatch_rows={}):
+def get_f1_input(gold_standard_dicts,
+                 prediction_dicts,
+                 input_type,
+                 mismatch_rows={}, check_types=False):
     """
     Get the number of true and false postives and false negatives for the
     model to calculate the following inputs for compute_f1 for both entities
@@ -241,6 +259,7 @@ def get_f1_input(gold_standard_dicts, prediction_dicts, input_type,
             types will be evaluated
         mismatch_rows, dict: empty dict (default) or dict where keys are
             columns for mismatch_df. Only used if not an empty dict.
+        check_types, bool: Whether or not to consider types in evaluations
 
     returns:
         predicted, int
@@ -249,7 +268,7 @@ def get_f1_input(gold_standard_dicts, prediction_dicts, input_type,
         mismatch_rows, dict: empty dict if empty dict was passed, updated
             mismatch_rows dict if dict with keys was passed
     """
-    pos_neg = {'tp':0, 'fp':0, 'fn':0}
+    pos_neg = {'tp': 0, 'fp': 0, 'fn': 0}
 
     # Rearrange gold standard so that it's a dict with keys that are doc_id's
     gold_standard_dict = {d['doc_key']: d for d in gold_standard_dicts}
@@ -259,10 +278,12 @@ def get_f1_input(gold_standard_dicts, prediction_dicts, input_type,
         gold_std = gold_standard_dict[doc['doc_key']]
         # Get tp/fp/fn counts for this document
         if input_type == 'ent':
-            pos_neg, mismatch_rows = get_doc_ent_counts(doc, gold_std, pos_neg, mismatch_rows)
+            pos_neg, mismatch_rows = get_doc_ent_counts(
+                doc, gold_std, pos_neg, mismatch_rows, check_types)
 
         elif input_type == 'rel':
-            pos_neg = get_doc_rel_counts(doc, gold_std, pos_neg, doc["doc_key"])
+            pos_neg = get_doc_rel_counts(doc, gold_std, pos_neg,
+                                         doc["doc_key"], check_types)
 
     predicted = pos_neg['tp'] + pos_neg['fp']
     gold = pos_neg['tp'] + pos_neg['fn']
@@ -271,7 +292,8 @@ def get_f1_input(gold_standard_dicts, prediction_dicts, input_type,
     return (predicted, gold, matched, mismatch_rows)
 
 
-def draw_boot_samples(pred_dicts, gold_std_dicts, num_boot, input_type):
+def draw_boot_samples(pred_dicts, gold_std_dicts, num_boot, input_type,
+                        check_types=False):
     """
     Draw bootstrap samples.
 
@@ -280,6 +302,7 @@ def draw_boot_samples(pred_dicts, gold_std_dicts, num_boot, input_type):
         gold_std_dicts, list of dict: dicts of gold standard annotations
         num_boot, int: number of bootstrap samples to draw
         input_type, str: 'ent' or 'rel'
+        check_types, bool: Whether or not to consider types in evaluations
 
     returns:
         prec_samples, list of float: list of precision values for bootstraps
@@ -294,14 +317,16 @@ def draw_boot_samples(pred_dicts, gold_std_dicts, num_boot, input_type):
     for _ in range(num_boot):
         # Sample prediction dicts with replacement
         pred_samp = np.random.choice(pred_dicts,
-                size=len(pred_dicts), replace=True)
+                                     size=len(pred_dicts),
+                                     replace=True)
         # Get indices of the sampled instances in the pred_dicts list
         idx_list = [pred_dicts.index(i) for i in pred_samp]
         # Since the lists are sorted the same, can use indices to get equivalent
         # docs in gold std
         gold_samp = np.array([gold_std_dicts[i] for i in idx_list])
         # Calculate performance for the sample
-        pred, gold, match, _ = get_f1_input(gold_samp, pred_samp, input_type)
+        pred, gold, match, _ = get_f1_input(gold_samp, pred_samp, input_type,
+                                            check_types)
         prec, rec, f1 = compute_f1(pred, gold, match)
         # Append each of the performance values to their respective sample lists
         prec_samples.append(prec)
@@ -311,8 +336,9 @@ def draw_boot_samples(pred_dicts, gold_std_dicts, num_boot, input_type):
     return (prec_samples, rec_samples, f1_samples)
 
 
-def get_performance_row(pred_file, gold_std_file, bootstrap, num_boot, df_rows,
-        mismatch_rows):
+def get_performance_row(pred_file, gold_std_file, bootstrap,
+                        num_boot, df_rows, mismatch_rows, map_types, entity_map,
+                        relation_map, check_types=False,):
     """
     Gets performance metrics and returns as a list.
 
@@ -325,6 +351,11 @@ def get_performance_row(pred_file, gold_std_file, bootstrap, num_boot, df_rows,
             values and CIs to which new results will be appended
         mismatch_rows, dict: if save_mismatches, keys are mismatch col names,
             values are lists. Else, empty dict
+        map_types, bool: whether or not to may prediction types to new ontology
+        entity_map, str: path to entity map if map_types, else ''
+        relation_map, str: path to relation map if map_types, else ''
+        check_types, bool: Whether or not to consider types in evaluations
+
 
     returns:
         df_rows, dict: df_rows updated with new row values
@@ -341,6 +372,16 @@ def get_performance_row(pred_file, gold_std_file, bootstrap, num_boot, df_rows,
         for obj in reader:
             pred_dicts.append(obj)
 
+    # Map types if requested
+    if map_types:
+        verboseprint(
+            '\nMapping entity and relation types to chosen ontologies...')
+        de, dr = map_jsonl(pred_dicts, entity_map, relation_map)
+        verboseprint(
+            f'{de} entities were dropped because their types didn\'t '
+            f'have an equivalent, and {dr} relations were dropped for the same '
+            'reason or because they relied on a dropped entity.')
+
     # Make sure all prediction files are also in the gold standard
     gold_doc_keys = [g['doc_key'] for g in gold_std_dicts]
     for doc in pred_dicts:
@@ -352,7 +393,7 @@ def get_performance_row(pred_file, gold_std_file, bootstrap, num_boot, df_rows,
                 'Skipping this document for performance calculation.')
             _ = pred_dicts.remove(doc)
 
-    # Sort the pred and gold lists by doc key to make sure they're in the same order
+    # Sort pred and gold lists by doc key to ensure they're in the same order
     gold_std_dicts = sorted(gold_std_dicts, key=lambda d: d['doc_key'])
     pred_dicts = sorted(pred_dicts, key=lambda d: d['doc_key'])
 
@@ -370,25 +411,26 @@ def get_performance_row(pred_file, gold_std_file, bootstrap, num_boot, df_rows,
             if len(sent) != 0:
                 gold_rels = True
     if not gold_rels:
-        warnings.warn('\n\nThere are no gold standard relation annotations. '
-                'Performance values and CIs will be 0 for models that predict '
-                'relations, please disregard.')
+        warnings.warn(
+            '\n\nThere are no gold standard relation annotations. '
+            'Performance values and CIs will be 0 for models that predict '
+            'relations, please disregard.')
 
     # Bootstrap sampling
     if bootstrap:
-        ent_boot_samples = draw_boot_samples(pred_dicts,
-                                    gold_std_dicts, num_boot, 'ent')
+        ent_boot_samples = draw_boot_samples(pred_dicts, gold_std_dicts,
+                                             num_boot, 'ent', check_types)
         if pred_rels:
-            rel_boot_samples = draw_boot_samples(pred_dicts,
-                                    gold_std_dicts, num_boot, 'rel')
+            rel_boot_samples = draw_boot_samples(pred_dicts, gold_std_dicts,
+                                                 num_boot, 'rel', check_types)
 
         # Calculate confidence interval
         ent_CIs = calculate_CI(ent_boot_samples[0], ent_boot_samples[1],
-                ent_boot_samples[2])
+                               ent_boot_samples[2])
 
         if pred_rels:
-            rel_CIs = calculate_CI(rel_boot_samples[0],  rel_boot_samples[1],
-                    rel_boot_samples[2])
+            rel_CIs = calculate_CI(rel_boot_samples[0], rel_boot_samples[1],
+                                   rel_boot_samples[2])
         else:
             rel_CIs = [np.nan for i in range(3)]
 
@@ -419,13 +461,12 @@ def get_performance_row(pred_file, gold_std_file, bootstrap, num_boot, df_rows,
 
     else:
         # Calculate performance
-        pred_ent, gold_ent, match_ent, mismatch_rows = get_f1_input(gold_std_dicts,
-                pred_dicts, 'ent', mismatch_rows)
+        pred_ent, gold_ent, match_ent, mismatch_rows = get_f1_input(
+            gold_std_dicts, pred_dicts, 'ent', mismatch_rows, check_types)
         ent_means = compute_f1(pred_ent, gold_ent, match_ent)
         if pred_rels:
-            pred_rel, gold_rel, match_rel, _ = get_f1_input(gold_std_dicts,
-                    pred_dicts,
-                    'rel')
+            pred_rel, gold_rel, match_rel, _ = get_f1_input(
+                gold_std_dicts, pred_dicts, 'rel', check_types)
             rel_means = compute_f1(pred_rel, gold_rel, match_rel)
         else:
             rel_means = [np.nan for i in range(3)]
@@ -442,29 +483,35 @@ def get_performance_row(pred_file, gold_std_file, bootstrap, num_boot, df_rows,
         return df_rows, mismatch_rows
 
 
-def main(gold_standard, out_name, predictions, bootstrap, num_boot,
-        save_mismatches):
+def main(gold_standard, out_name, predictions, check_types, bootstrap, num_boot,
+         save_mismatches, map_types, entity_map, relation_map):
 
     # Calculate performance
     verboseprint('\nCalculating performance...')
     if bootstrap:
-        cols = ['pred_file', 'gold_std_file', 'ent_precision', 'ent_recall',
-                'ent_F1', 'rel_precision', 'rel_recall', 'rel_F1',
-                'ent_precision_CI', 'ent_recall_CI', 'ent_F1_CI',
-                'rel_precision_CI', 'rel_recall_CI', 'rel_F1_CI']
+        cols = [
+            'pred_file', 'gold_std_file', 'ent_precision', 'ent_recall',
+            'ent_F1', 'rel_precision', 'rel_recall', 'rel_F1',
+            'ent_precision_CI', 'ent_recall_CI', 'ent_F1_CI',
+            'rel_precision_CI', 'rel_recall_CI', 'rel_F1_CI'
+        ]
     else:
-        cols = ['pred_file', 'gold_std_file', 'ent_precision', 'ent_recall',
-                'ent_F1', 'rel_precision', 'rel_recall', 'rel_F1']
-    df_rows = {k:[] for k in cols}
+        cols = [
+            'pred_file', 'gold_std_file', 'ent_precision', 'ent_recall',
+            'ent_F1', 'rel_precision', 'rel_recall', 'rel_F1'
+        ]
+    df_rows = {k: [] for k in cols}
     if save_mismatches:
         # 'mismatch_type' column: 1 if the model correctly matched the gold
         # standard (true positive), 0 if the model failed to match the gold
         # standard (false negative)
         # doc_key + sent_num + ent_list allows recovery of the text of the
         # entity later on, while ent_type makes type access easier
-        mismatch_cols = ['doc_key', 'mismatch_type', 'sent_num', 'ent_list',
-                        'ent_type', 'model']
-        mismatch_rows = {k:[] for k in mismatch_cols}
+        mismatch_cols = [
+            'doc_key', 'mismatch_type', 'sent_num', 'ent_list', 'ent_type',
+            'model'
+        ]
+        mismatch_rows = {k: [] for k in mismatch_cols}
     else:
         # To avoid having to add too much code, if the user doesn't want
         # mismatches, will just add nothing to an empty dict to allow the same
@@ -474,22 +521,24 @@ def main(gold_standard, out_name, predictions, bootstrap, num_boot,
     for model in predictions:
         verboseprint(f'\nEvaluating model predictions from file {model}...')
         df_rows, mismatch_rows = get_performance_row(model, gold_standard,
-                                           bootstrap, num_boot, df_rows,
-                                           mismatch_rows)
+                                                     bootstrap,
+                                                     num_boot, df_rows,
+                                                     mismatch_rows, check_types)
         if save_mismatches:
             # Add the model string onto the mismatch_rows df
-            mismatch_col_lens = list(set([len(v) for k, v in
-                mismatch_rows.items()]))
+            mismatch_col_lens = list(
+                set([len(v) for k, v in mismatch_rows.items()]))
             assert len(mismatch_col_lens) == 2
-            missing_model_name_num = abs(mismatch_col_lens[0] - mismatch_col_lens[1])
-            missing_model_names = [model for i in range(missing_model_name_num)]
+            missing_model_name_num = abs(mismatch_col_lens[0] -
+                                         mismatch_col_lens[1])
+            missing_model_names = [
+                model for i in range(missing_model_name_num)
+            ]
             mismatch_rows['model'].extend(missing_model_names)
 
     # Make df
     verboseprint('\nMaking dataframe...')
-    df = pd.DataFrame(
-        df_rows,
-        columns=cols)
+    df = pd.DataFrame(df_rows, columns=cols)
     verboseprint(f'Snapshot of dataframe:\n{df.head()}')
 
     # Make mismatch df if specified
@@ -514,19 +563,25 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Calculate performance')
 
     parser.add_argument('gold_standard',
-                        type=str,
-                        help='Path to dygiepp-formatted gold standard data')
+        type=str,
+        help='Path to dygiepp-formatted gold standard data')
     parser.add_argument('out_name',
-                        type=str,
-                        help='Name of save file for output (including path)')
+        type=str,
+        help='Name of save file for output (including path)')
     parser.add_argument(
         'prediction_dir',
         type=str,
         help='Path to directory with dygiepp-formatted model outputs')
-    parser.add_argument('--bootstrap', action='store_true',
-                        help='Whether or not to bootstrap a confidence interval '
-                        'for performance metrics. Specify for deterministic model '
-                        'output.')
+    parser.add_argument(
+        '--check_types',
+        action='store_true',
+        help='Whether or not to consider types when performing evaluations')
+    parser.add_argument(
+        '--bootstrap',
+        action='store_true',
+        help='Whether or not to bootstrap a confidence interval '
+        'for performance metrics. Specify for deterministic model '
+        'output.')
     parser.add_argument(
         '-num_boot',
         type=int,
@@ -539,25 +594,47 @@ if __name__ == "__main__":
         help='If a prefix is provided, only calculates performance for '
         'files beginning with the prefix in the directory.',
         default='')
-    parser.add_argument('--save_mismatches', action='store_true',
-            help='Whether or not to save the types and numbers of  mismatches '
-            'for all models. To be used in downstream analysis. Can only be '
-            'specified if --bootstrap is not specified.')
+    parser.add_argument(
+        '--map_types',
+        action='store_true',
+        help='Whether or not to map predicted types to a different ontology')
+    parser.add_argument(
+        '-entity_map',
+        type=str,
+        help='Path to entity map, required if --map_types is provided')
+    parser.add_argument(
+        '-relation_map',
+        type=str,
+        help='Path to relation map, required if --map_types is provided')
+    parser.add_argument(
+        '--save_mismatches',
+        action='store_true',
+        help='Whether or not to save the types and numbers of  mismatches '
+        'for all models. To be used in downstream analysis. Can only be '
+        'specified if --bootstrap is not specified.')
     parser.add_argument('--verbose',
-                        '-v',
-                        action='store_true',
-                        help='If provided, script progress will be printed')
+        '-v',
+        action='store_true',
+        help='If provided, script progress will be printed')
 
     args = parser.parse_args()
 
     if args.save_mismatches:
-        assert not args.bootstrap, ('--save_mismatches and --bootstrap '
-                'cannot be specified together, please remove --bootstrap if '
-                'you would like to use --save_mismatches')
+        assert not args.bootstrap, (
+            '--save_mismatches and --bootstrap '
+            'cannot be specified together, please remove --bootstrap if '
+            'you would like to use --save_mismatches')
+
+    if args.map_types:
+        assert (args.entity_map != '') and (args.relation_map != ''), (
+            'One or more of entity_map and relation_map has not been specified '
+            ', both are required when map_types is passed')
 
     args.gold_standard = abspath(args.gold_standard)
     args.out_name = abspath(args.out_name)
     args.prediction_dir = abspath(args.prediction_dir)
+    args.entity_map = abspath(args.entity_map)
+    args.relation_map = abspath(args.relation_map)
 
     verboseprint = print if args.verbose else lambda *a, **k: None
 
@@ -566,5 +643,6 @@ if __name__ == "__main__":
         if f.startswith(args.use_prefix)
     ]
 
-    main(args.gold_standard, args.out_name, pred_files, args.bootstrap,
-            args.num_boot, args.save_mismatches)
+    main(args.gold_standard, args.out_name, pred_files, args.check_types,
+         args.bootstrap, args.num_boot, args.save_mismatches, args.map_types,
+         args.entity_map, args.relation_map)

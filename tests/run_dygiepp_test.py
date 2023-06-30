@@ -7,6 +7,7 @@ just to call code that's already been tested elsewhere.
 
 Author: Serena G. Lotreck
 """
+import pytest
 import unittest
 import sys
 import os
@@ -20,8 +21,8 @@ sys.path.append('../models/neural_models/')
 import run_dygiepp as rd
 
 
-class TestCheckMakeFiletree(unittest.TestCase):
-    def setUp(self):
+class TestCheckMakeFiletree:
+    def setup_method(self):
 
         # Set up tempdir
         self.tmpdir = mkdtemp()
@@ -50,7 +51,7 @@ class TestCheckMakeFiletree(unittest.TestCase):
             'performance'
         ])
 
-    def tearDown(self):
+    def teardown_method(self):
 
         shutil.rmtree(self.tmpdir)
 
@@ -61,8 +62,8 @@ class TestCheckMakeFiletree(unittest.TestCase):
 
         subdirs = sorted(os.listdir(topdir_abspath))
 
-        self.assertEqual(subdirs, self.subdirs)
-        self.assertEqual(out, True)
+        assert subdirs == self.subdirs
+        assert out == True
 
     def test_check_make_filetree_some_exist(self):
 
@@ -71,8 +72,8 @@ class TestCheckMakeFiletree(unittest.TestCase):
 
         subdirs = sorted(os.listdir(topdir_abspath))
 
-        self.assertEqual(subdirs, self.subdirs)
-        self.assertEqual(out, True)
+        assert subdirs == self.subdirs
+        assert out == True
 
     def test_check_make_filetree_none_exist(self):
 
@@ -82,12 +83,12 @@ class TestCheckMakeFiletree(unittest.TestCase):
         subdirs = sorted(
             os.listdir(topdir_abspath))  # Fails if topdir isn't created
 
-        self.assertEqual(subdirs, self.subdirs)
-        self.assertEqual(out, False)
+        assert subdirs == self.subdirs
+        assert out == False
 
 
-class TestCheckPrefix(unittest.TestCase):
-    def setUp(self):
+class TestCheckPrefix:
+    def setup_method(self):
 
         # Set up tempdir
         self.tmpdir = mkdtemp()
@@ -117,7 +118,7 @@ class TestCheckPrefix(unittest.TestCase):
             f'{self.filetree2}/formatted_data/{self.prefix}_other_stuff.py'))
         os.system(f"touch {prefix_file_path}")
 
-    def tearDown(self):
+    def teardown_method(self):
 
         shutil.rmtree(self.tmpdir)
 
@@ -126,16 +127,16 @@ class TestCheckPrefix(unittest.TestCase):
         try:
             rd.check_prefix(self.filetree1, self.prefix)
         except:
-            self.fail('Check prefix raised an exception')
+            pytest.fail('Check prefix raised an exception')
 
     def test_check_prefix_with_prefix(self):
 
-        with self.assertRaises(rd.PrefixError):
+        with pytest.raises(rd.PrefixError):
             rd.check_prefix(self.filetree2, self.prefix)
 
 
-class TestCheckModels(unittest.TestCase):
-    def setUp(self):
+class TestCheckModels:
+    def setup_method(self):
 
         # Set up tempdir
         self.tmpdir = mkdtemp()
@@ -158,7 +159,7 @@ class TestCheckModels(unittest.TestCase):
         for model in self.models2[:2]:
             os.system(f'touch {self.dygiepp_path2}/pretrained/{model}.tar.gz')
 
-    def tearDown(self):
+    def teardown_method(self):
 
         shutil.rmtree(self.tmpdir)
 
@@ -167,16 +168,16 @@ class TestCheckModels(unittest.TestCase):
         try:
             rd.check_models(self.models1, self.dygiepp_path1)
         except:
-            self.fail('Check models raised an exception')
+            pytest.fail('Check models raised an exception')
 
     def test_check_models_models_missing(self):
 
-        with self.assertRaises(rd.ModelNotFoundError):
+        with pytest.raises(rd.ModelNotFoundError):
             rd.check_models(self.models2, self.dygiepp_path2)
 
 
-class TestReplaceSeeds(unittest.TestCase):
-    def setUp(self):
+class TestReplaceSeeds:
+    def setup_method(self):
 
         # Make template string
         self.template = (
@@ -201,7 +202,7 @@ class TestReplaceSeeds(unittest.TestCase):
 
         new_template = rd.replace_seeds(self.template, self.rand_seeds)
 
-        self.assertEqual(new_template, self.right_answer)
+        assert new_template == self.right_answer
 
 
 if __name__ == "__main__":

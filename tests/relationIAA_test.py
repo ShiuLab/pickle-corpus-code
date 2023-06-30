@@ -15,8 +15,8 @@ from pandas.testing import assert_frame_equal
 import relationIAA as riaa
 
 
-class TestGetOffsets(unittest.TestCase):
-    def setUp(self):
+class TestGetOffsets:
+    def setup_method(self):
 
         self.one_offset = '24 29\tPROT1\n'
         self.multiple_offsets = '24 29;42 44;79 82\tPROT1\n'
@@ -28,17 +28,17 @@ class TestGetOffsets(unittest.TestCase):
 
         offsets = riaa.get_offsets(self.one_offset, [])
 
-        self.assertEqual(offsets, self.right_answer_single)
+        assert offsets == self.right_answer_single
 
     def test_get_offsets_multiple(self):
 
         offsets = riaa.get_offsets(self.multiple_offsets, [])
 
-        self.assertEqual(offsets, self.right_answer_multiple)
+        assert offsets == self.right_answer_multiple
 
 
-class TestFormatRelation(unittest.TestCase):
-    def setUp(self):
+class TestFormatRelation:
+    def setup_method(self):
 
         self.rel = '\tinteracts-indirect Arg1:T1 Arg2:T4\n'
 
@@ -57,11 +57,11 @@ class TestFormatRelation(unittest.TestCase):
 
         rel = riaa.format_relation(self.rel, self.line_dict)
 
-        self.assertEqual(rel, self.right_answer)
+        assert rel == self.right_answer
 
 
-class TestMakeAnnDF(unittest.TestCase):
-    def setUp(self):
+class TestMakeAnnDF:
+    def setup_method(self):
 
         self.tmpdir = "tmp"
         os.makedirs(self.tmpdir, exist_ok=True)
@@ -94,7 +94,7 @@ R2\tinteracts-direct Arg1:T4 Arg2:T5"""
 
         self.ann_empty_df = pd.DataFrame([], columns=['Type', 'Arg1', 'Arg2'])
 
-    def tearDown(self):
+    def teardown_method(self):
 
         shutil.rmtree(self.tmpdir)
 

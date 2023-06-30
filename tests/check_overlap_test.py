@@ -11,12 +11,12 @@ import sys
 sys.path.append('../annotation/abstract_scripts/')
 import check_overlap as chk
 
-class TestoverlapFunctions(unittest.TestCase):
+class TestoverlapFunctions:
     """
     Tests individual helper functions to main()
     """
 
-    def setUp(self):
+    def setup_method(self):
         """
         Create a temporary directory with the test data
         """
@@ -41,7 +41,7 @@ class TestoverlapFunctions(unittest.TestCase):
                     f.write('hello world!')
 
 
-    def tearDown(self):
+    def teardown_method(self):
         """
         Delete temporary files used for testing
         """
@@ -67,9 +67,9 @@ class TestoverlapFunctions(unittest.TestCase):
         fnames = chk.get_names(self.test_tr_dir, self.test_te_dir,
                                 self.test_ap_dir)
 
-        self.assertEqual(fnames['train'], self.tr_names)
-        self.assertEqual(fnames['test'], self.te_names)
-        self.assertEqual(fnames['apply'], self.ap_names)
+        assert fnames['train'] == self.tr_names
+        assert fnames['test'] == self.te_names
+        assert fnames['apply'] == self.ap_names
 
 
     def test_compare_two_dirs_no_overlap(self):
@@ -81,7 +81,7 @@ class TestoverlapFunctions(unittest.TestCase):
         list2 = ['d','e']
         overlap = chk.compare_two_dirs(list1, list2)
 
-        self.assertEqual(overlap, 'No data overlap!')
+        assert overlap == 'No data overlap!'
 
 
     def test_compare_two_dirs_overlap(self):
@@ -93,16 +93,16 @@ class TestoverlapFunctions(unittest.TestCase):
         list2 = ['e','f','g','x','y','z']
         overlap = chk.compare_two_dirs(list1, list2)
 
-        self.assertEqual(set(overlap), set(['e','f','g']))
+        assert set(overlap) == set(['e','f','g'])
 
 
 
-class TestIntegration(unittest.TestCase):
+class TestIntegration:
     """
     Tests that the script as a whole works with input/output
     """
 
-    def setUp(self):
+    def setup_method(self):
         """
         Create a temporary directory containing the mock data
         """

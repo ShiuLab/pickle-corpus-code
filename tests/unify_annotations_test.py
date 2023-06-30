@@ -13,8 +13,8 @@ sys.path.append('../annotation/iaa/')
 import unify_annotations as ua
 
 
-class TestUnifyAnnotations(unittest.TestCase):
-    def setUp(self):
+class TestUnifyAnnotations:
+    def setup_method(self):
 
         self.tmpdir = 'tmp'
         self.annotator1 = 'thilanka'
@@ -98,7 +98,7 @@ T16\tENTITY 143 148\tO(3);
 T20\tENTITY 411 419\tclone 51
 """
 
-    def tearDown(self):
+    def teardown_method(self):
 
         shutil.rmtree(self.tmpdir)
 
@@ -109,7 +109,7 @@ T20\tENTITY 411 419\tclone 51
         with open(f'{self.tmpdir}/last_ten_unified/txt1.ann') as myf:
             ann_file = myf.read()
 
-        self.assertEqual(ann_file, self.right_answer)
+        assert ann_file == self.right_answer
 
     def test_unify_annotations_rels(self):
 

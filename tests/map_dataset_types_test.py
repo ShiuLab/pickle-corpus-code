@@ -1,6 +1,8 @@
 """
 Spot checks for map_dataset_types.py
 
+Currently only contains checks for josnl formatted mapping
+
 Author: Serena G. Lotreck
 """
 import pytest

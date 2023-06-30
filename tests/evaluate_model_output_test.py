@@ -15,8 +15,8 @@ import evaluate_model_output as emo
 ## since it just randomly selects and then uses other funcs
 ## that already have tests
 
-class TestCalculateCI(unittest.TestCase):
-    def setUp(self):
+class TestCalculateCI:
+    def setup_method(self):
         self.prec_samples = [0.1,0.3,0.3,0.5,0.6,0.9]
         self.rec_samples = [0.2,0.2,0.3,0.4,0.4,0.8]
         self.f1_samples = [0.1,0.3,0.4,0.5,0.7,0.7]
@@ -32,17 +32,17 @@ class TestCalculateCI(unittest.TestCase):
         self.f1_CI = (np.percentile(self.f1_samples, lower_p),
                 np.percentile(self.f1_samples, upper_p))
 
-    def test_calculate_CI(self):
+    def test_calculate_ci(self):
         prec_CI, rec_CI, f1_CI = emo.calculate_CI(self.prec_samples,
                 self.rec_samples, self.f1_samples)
 
-        self.assertEqual(prec_CI, self.prec_CI)
-        self.assertEqual(rec_CI, self.rec_CI)
-        self.assertEqual(f1_CI, self.f1_CI)
+        assert prec_CI == self.prec_CI
+        assert rec_CI == self.rec_CI
+        assert f1_CI == self.f1_CI
 
-class TestGetDocEntCounts(unittest.TestCase):
+class TestGetDocEntCounts:
     maxDiff = None
-    def setUp(self):
+    def setup_method(self):
 
         self.mismatch_rows_col_input = {'doc_key':[], 'mismatch_type':[],
                 'sent_num':[], 'ent_list':[], 'ent_type':[]}
@@ -130,52 +130,52 @@ class TestGetDocEntCounts(unittest.TestCase):
         counts, mismatch_rows = emo.get_doc_ent_counts(self.doc1_pred_perf, self.doc1_gold,
                 {'tp':0, 'fp':0, 'fn':0}, self.mismatch_rows_col_input)
 
-        self.assertEqual(counts, self.doc1_perf_dict)
+        assert counts == self.doc1_perf_dict
 
     def test_get_doc_ent_counts_doc1_perf_mismatch_rows(self):
         counts, mismatch_rows = emo.get_doc_ent_counts(self.doc1_pred_perf, self.doc1_gold,
                 {'tp':0, 'fp':0, 'fn':0}, self.mismatch_rows_col_input)
 
-        self.assertEqual(mismatch_rows, self.doc1_perf_mismatch_rows)
+        assert mismatch_rows == self.doc1_perf_mismatch_rows
 
     def test_get_doc_ent_counts_doc2_perf(self):
         counts, mismatch_rows = emo.get_doc_ent_counts(self.doc2_pred_perf, self.doc2_gold,
                 {'tp':0, 'fp':0, 'fn':0}, self.doc2_mismatch)
 
-        self.assertEqual(counts, self.doc2_perf_dict)
+        assert counts == self.doc2_perf_dict
 
     def test_get_doc_ent_counts_doc2_perf_mismatch(self):
         counts, mismatch_rows = emo.get_doc_ent_counts(self.doc2_pred_perf, self.doc2_gold,
                 {'tp':0, 'fp':0, 'fn':0}, self.doc2_mismatch)
 
-        self.assertEqual(mismatch_rows, self.doc2_mismatch)
+        assert mismatch_rows == self.doc2_mismatch
 
     def test_get_doc_ent_counts_doc1_imperf(self):
         counts, mismatch_rows = emo.get_doc_ent_counts(self.doc1_pred_imperf, self.doc1_gold,
                 {'tp':0, 'fp':0, 'fn':0}, self.mismatch_rows_col_input)
 
-        self.assertEqual(counts, self.doc1_imperf_dict)
+        assert counts == self.doc1_imperf_dict
 
     def test_get_doc_ent_counts_doc1_imperf_mismatch(self):
         counts, mismatch_rows = emo.get_doc_ent_counts(self.doc1_pred_imperf, self.doc1_gold,
                 {'tp':0, 'fp':0, 'fn':0}, self.mismatch_rows_col_input)
 
-        self.assertEqual(mismatch_rows, self.doc1_imperf_mismatch_rows)
+        assert mismatch_rows == self.doc1_imperf_mismatch_rows
 
     def test_get_doc_ent_counts_doc2_imperf(self):
         counts, mismatch_rows = emo.get_doc_ent_counts(self.doc2_pred_imperf, self.doc2_gold,
                 {'tp':0, 'fp':0, 'fn':0}, self.doc2_mismatch)
 
-        self.assertEqual(counts, self.doc2_imperf_dict)
+        assert counts == self.doc2_imperf_dict
 
     def test_get_doc_ent_counts_doc2_imperf_mismatch(self):
         counts, mismatch_rows = emo.get_doc_ent_counts(self.doc2_pred_imperf, self.doc2_gold,
                 {'tp':0, 'fp':0, 'fn':0}, self.doc2_mismatch)
 
-        self.assertEqual(mismatch_rows, self.doc2_mismatch)
+        assert mismatch_rows == self.doc2_mismatch
 
-class TestEliminateRelDups(unittest.TestCase):
-    def setUp(self):
+class TestEliminateRelDups:
+    def setup_method(self):
 
         self.doc_key = 'doc_1'
         self.sent_type = 'predictions'
@@ -218,7 +218,7 @@ class TestEliminateRelDups(unittest.TestCase):
 
         result = set([tuple(i) for i in result])
 
-        self.assertEqual(result, self.no_result)
+        assert result == self.no_result
 
     def test_eliminate_rel_dups_all_dup(self):
         result = emo.eliminate_rel_dups(self.all_dup, self.doc_key,
@@ -226,7 +226,7 @@ class TestEliminateRelDups(unittest.TestCase):
 
         result = set([tuple(i) for i in result])
 
-        self.assertEqual(result, self.all_result)
+        assert result == self.all_result
 
     def test_eliminate_rel_dups_one_dup(self):
         result = emo.eliminate_rel_dups(self.one_dup, self.doc_key,
@@ -234,7 +234,7 @@ class TestEliminateRelDups(unittest.TestCase):
 
         result = set([tuple(i) for i in result])
 
-        self.assertEqual(result, self.one_result)
+        assert result == self.one_result
 
     def test_eliminate_rel_dups_diff_dup(self):
         result = emo.eliminate_rel_dups(self.diff_dup, self.doc_key,
@@ -242,11 +242,11 @@ class TestEliminateRelDups(unittest.TestCase):
 
         result = set([tuple(i) for i in result])
 
-        self.assertEqual(result, self.diff_result)
+        assert result == self.diff_result
 
 
-class TestCheckRelMatches(unittest.TestCase):
-    def setUp(self):
+class TestCheckRelMatches:
+    def setup_method(self):
 
         # No matches
         self.inc_pred = [1, 3, 5, 6, "hello-world"]
@@ -271,21 +271,21 @@ class TestCheckRelMatches(unittest.TestCase):
     def test_check_rel_matches_no_matches(self):
         result = emo.check_rel_matches(self.inc_pred, self.inc_gold)
 
-        self.assertEqual(result, self.inc_result)
+        assert result == self.inc_result
 
     def test_check_rel_matches_ordered_match(self):
         result = emo.check_rel_matches(self.corr_pred, self.corr_out_gold)
 
-        self.assertEqual(result, self.corr_result)
+        assert result == self.corr_result
 
     def test_check_rel_matches_out_of_order(self):
         result = emo.check_rel_matches(self.out_pred, self.corr_out_gold)
 
-        self.assertEqual(result, self.out_result)
+        assert result == self.out_result
 
 
-class TestGetDocRelCounts(unittest.TestCase):
-    def setUp(self):
+class TestGetDocRelCounts:
+    def setup_method(self):
 
         self.gold = {
             "doc_key":
@@ -352,24 +352,24 @@ class TestGetDocRelCounts(unittest.TestCase):
         counts = emo.get_doc_rel_counts(self.doc_pred_perf, self.gold,
                 {'tp':0, 'fp':0, 'fn':0}, self.doc_pred_perf["doc_key"])
 
-        self.assertEqual(counts, self.doc_perf_dict)
+        assert counts == self.doc_perf_dict
 
     def test_get_doc_rel_counts_imperf(self):
         counts = emo.get_doc_rel_counts(self.doc_pred_imperf, self.gold,
                 {'tp':0, 'fp':0, 'fn':0}, self.doc_pred_imperf["doc_key"])
 
-        self.assertEqual(counts, self.doc_imperf_dict)
+        assert counts == self.doc_imperf_dict
 
     def test_get_doc_rel_counts_none(self):
         counts = emo.get_doc_rel_counts(self.doc_pred_none, self.gold,
                 {'tp':0, 'fp':0, 'fn':0}, self.doc_pred_none["doc_key"])
 
-        self.assertEqual(counts, self.doc_none_dict)
+        assert counts == self.doc_none_dict
 
 
-class TestGetF1Input(unittest.TestCase):
+class TestGetF1Input:
     maxDiff = None
-    def setUp(self):
+    def setup_method(self):
 
         self.mismatch_rows_col_input = {'doc_key':[], 'mismatch_type':[],
                 'sent_num':[], 'ent_list':[], 'ent_type':[]}
@@ -464,99 +464,95 @@ class TestGetF1Input(unittest.TestCase):
         predicted, gold, matched, mismatch_rows = emo.get_f1_input(self.gold_std,
                     self.pred_perf, 'ent', self.mismatch_rows_col_input)
 
-        self.assertEqual(predicted, self.perf_pred_num_ent)
+        assert predicted == self.perf_pred_num_ent
 
     def test_get_f1_input_perfect_gold_ent(self):
 
         predicted, gold, matched, mismatch_rows = emo.get_f1_input(self.gold_std,
                     self.pred_perf, 'ent', self.mismatch_rows_col_input)
 
-        self.assertEqual(gold, self.perf_gold_num_ent)
+        assert gold == self.perf_gold_num_ent
 
     def test_get_f1_input_perfect_matched_ent(self):
 
         predicted, gold, matched, mismatch_rows = emo.get_f1_input(self.gold_std,
                        self.pred_perf, 'ent', self.mismatch_rows_col_input)
 
-        self.assertEqual(matched, self.perf_matched_num_ent)
+        assert matched == self.perf_matched_num_ent
 
     def test_get_f1_input_perfect_mismatch(self):
 
         predicted, gold, matched, mismatch_rows = emo.get_f1_input(self.gold_std,
                     self.pred_perf, 'ent', self.mismatch_rows_col_input)
 
-        self.assertEqual(mismatch_rows, self.perf_mismatch_rows)
+        assert mismatch_rows == self.perf_mismatch_rows
 
     def test_get_f1_input_imperfect_predicted_ent(self):
 
         predicted, gold, matched, mismatch_rows = emo.get_f1_input(self.gold_std,
                      self.pred_imperf, 'ent', self.mismatch_rows_col_input)
 
-        self.assertEqual(predicted, self.imperf_pred_num_ent)
+        assert predicted == self.imperf_pred_num_ent
 
     def test_get_f1_input_imperfect_gold_ent(self):
 
         predicted, gold, matched, mismatch_rows = emo.get_f1_input(self.gold_std,
                     self.pred_imperf, 'ent', self.mismatch_rows_col_input)
 
-        self.assertEqual(gold, self.imperf_gold_num_ent)
+        assert gold == self.imperf_gold_num_ent
 
     def test_get_f1_input_imperfect_matched_ent(self):
 
         predicted, gold, matched, mismatch_rows = emo.get_f1_input(self.gold_std,
                     self.pred_imperf, 'ent', self.mismatch_rows_col_input)
 
-        self.assertEqual(matched, self.imperf_matched_num_ent)
+        assert matched == self.imperf_matched_num_ent
 
     def test_get_f1_input_imperfect_mismatch(self):
 
         predicted, gold, matched, mismatch_rows = emo.get_f1_input(self.gold_std,
                     self.pred_imperf, 'ent', self.mismatch_rows_col_input)
 
-        self.assertEqual(mismatch_rows, self.imperf_mismatch_rows)
+        assert mismatch_rows == self.imperf_mismatch_rows
 
     def test_get_f1_input_perfect_predicted_rel(self):
 
         predicted, gold, matched, mismatch_rows = emo.get_f1_input(self.gold_std,
                                                     self.pred_perf, 'rel')
 
-        self.assertEqual(predicted, self.perf_pred_num_rel)
+        assert predicted == self.perf_pred_num_rel
 
     def test_get_f1_input_perfect_gold_rel(self):
 
         predicted, gold, matched, mismatch_rows = emo.get_f1_input(self.gold_std,
                                                     self.pred_perf, 'rel')
 
-        self.assertEqual(gold, self.perf_gold_num_rel)
+        assert gold == self.perf_gold_num_rel
 
     def test_get_f1_input_perfect_matched_rel(self):
 
         predicted, gold, matched, mismatch_rows = emo.get_f1_input(self.gold_std,
                                                     self.pred_perf, 'rel')
 
-        self.assertEqual(matched, self.perf_matched_num_rel)
+        assert matched == self.perf_matched_num_rel
 
     def test_get_f1_input_imperfect_predicted_rel(self):
 
         predicted, gold, matchedi, mismatch_rows = emo.get_f1_input(self.gold_std,
                                                     self.pred_imperf, 'rel')
 
-        self.assertEqual(predicted, self.imperf_pred_num_rel)
+        assert predicted == self.imperf_pred_num_rel
 
     def test_get_f1_input_imperfect_gold_rel(self):
 
         predicted, gold, matched, mismatch_rows = emo.get_f1_input(self.gold_std,
                                                     self.pred_imperf, 'rel')
 
-        self.assertEqual(gold, self.imperf_gold_num_rel)
+        assert gold == self.imperf_gold_num_rel
 
     def test_get_f1_input_imperfect_matched_rel(self):
 
         predicted, gold, matched, mismatch_rows = emo.get_f1_input(self.gold_std,
                                                     self.pred_imperf, 'rel')
 
-        self.assertEqual(matched, self.imperf_matched_num_rel)
-
-
-if __name__ == "__main__":
-    unittest.main()
+        assert matched == self.imperf_matched_num_rel
