@@ -203,7 +203,3 @@ class TestReplaceSeeds:
         new_template = rd.replace_seeds(self.template, self.rand_seeds)
 
         assert new_template == self.right_answer
-
-
-if __name__ == "__main__":
-    unittest.main()

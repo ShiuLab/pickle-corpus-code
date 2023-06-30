@@ -114,7 +114,3 @@ T20\tENTITY 411 419\tclone 51
     def test_unify_annotations_rels(self):
 
         pass
-
-
-if __name__ == "__main__":
-    unittest.main()

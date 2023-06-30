@@ -147,6 +147,3 @@ class TestIntegration:
                     self.test_ap_dir_overlap, self.test_top_dir)
 
             output = 'Overlapping abstracts between {key}:\n'
-
-if __name__ == '__main__':
-    unittest.main()

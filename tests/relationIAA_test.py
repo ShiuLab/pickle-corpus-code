@@ -109,7 +109,3 @@ R2\tinteracts-direct Arg1:T4 Arg2:T5"""
         ann_df = riaa.make_ann_df(self.ann_empty_path)
 
         assert_frame_equal(ann_df, self.ann_empty_df)
-
-
-if __name__ == "__main__":
-    unittest.main()
