@@ -40,7 +40,7 @@ class TestCalculateCI:
         assert rec_CI == self.rec_CI
         assert f1_CI == self.f1_CI
 
-class TestGetDocEntCounts:
+class TestGetDocEntCountsWithoutTypes:
     maxDiff = None
     def setup_method(self):
 
@@ -171,6 +171,138 @@ class TestGetDocEntCounts:
     def test_get_doc_ent_counts_doc2_imperf_mismatch(self):
         counts, mismatch_rows = emo.get_doc_ent_counts(self.doc2_pred_imperf, self.doc2_gold,
                 {'tp':0, 'fp':0, 'fn':0}, self.doc2_mismatch)
+
+        assert mismatch_rows == self.doc2_mismatch
+
+class TestGetDocEntCountsWithTypes:
+    maxDiff = None
+    def setup_method(self):
+
+        self.mismatch_rows_col_input = {'doc_key':[], 'mismatch_type':[],
+                'sent_num':[], 'ent_list':[], 'ent_type':[]}
+
+        self.doc1_gold = {
+            "doc_key":
+            "doc1",
+            "sentences":
+            [['Hello', 'world', ',', 'my', 'name', 'is', 'Sparty', '.'],
+             [
+                 'My', 'research', 'is', 'about', 'A.', 'thaliana', 'protein',
+                 '5'
+             ]],
+            "ner": [[[0, 1, "Greeting"], [6, 6, "Person"]],
+                    [[12, 13, "Person"], [14, 15, "Biological_entity"]]]
+        }
+        self.doc2_gold = {
+            "doc_key": "doc2",
+            "sentences": [['Hello']],
+            "ner": [[]]
+        }
+
+        self.doc1_pred_perf = {
+            "doc_key":
+            "doc1",
+            "sentences":
+            [['Hello', 'world', ',', 'my', 'name', 'is', 'Sparty', '.'],
+             [
+                 'My', 'research', 'is', 'about', 'A.', 'thaliana', 'protein',
+                 '5'
+             ]],
+            "predicted_ner": [[[0, 1, "Greeting"], [6, 6, "Person"]],
+                              [[12, 13, "Person"], [14, 15, "Biological_entity"]]]
+        }
+        self.doc1_perf_mismatch_rows = {'doc_key':['doc1', 'doc1', 'doc1',
+           'doc1'], 'mismatch_type':[0,0,0,0], 'sent_num':[0,0,1,1],
+           'ent_list':[[0, 1, "Greeting"], [6, 6, "Person"], [12, 13, "Person"],
+               [14, 15, "Biological_entity"]], 'ent_type':["Greeting", "Person", "Person",
+               "Biological_entity"]}
+        self.doc1_perf_dict = {'tp': 4, 'fp':0, 'fn':0}
+
+        self.doc2_pred_perf = {
+            "doc_key": "doc2",
+            "sentences": [['Hello']],
+            "predicted_ner": [[]]
+        }
+        self.doc2_perf_dict = {'tp': 0, 'fp':0, 'fn':0}
+
+        # Use doc2 to test the case where save_mismatch isn't specified
+        self.doc2_mismatch = {}
+
+        self.doc1_pred_imperf = {
+            "doc_key":
+            "doc1",
+            "sentences":
+            [['Hello', 'world', ',', 'my', 'name', 'is', 'Sparty', '.'],
+             [
+                 'My', 'research', 'is', 'about', 'A.', 'thaliana', 'protein',
+                 '5'
+             ]],
+            "predicted_ner": [[[0, 1, "Greeting"]],
+                              [[9, 9, "Greeting"], [13, 13, "Person"],
+                               [14, 15, "Protein"]]]
+        }
+        self.doc1_imperf_mismatch_rows = {'doc_key':['doc1', 'doc1', 'doc1', 'doc1'],
+            'mismatch_type':[1,0,0,0], 'sent_num':[0,0,1,1],
+            'sent_num':[0,0,1,1],
+            'ent_list':[[0, 1, "Greeting"], [6, 6, "Person"],
+               [14, 15, "Person"], [12, 13, "Biological_entity"]],
+            'ent_type':["Greeting", "Person", "Person",
+               "Biological_entity"]}
+
+        self.doc1_imperf_dict = {'tp':1, 'fp':3, 'fn':3}
+
+        self.doc2_pred_imperf = {
+            "doc_key": "doc2",
+            "sentences": [['Hello']],
+            "predicted_ner": [[[0, 1, "ORG"]]]
+        }
+        self.doc2_imperf_dict = {'tp':0, 'fp':1, 'fn':0}
+
+    def test_get_doc_ent_counts_doc1_perf(self):
+        counts, mismatch_rows = emo.get_doc_ent_counts(self.doc1_pred_perf, self.doc1_gold,
+                {'tp':0, 'fp':0, 'fn':0}, self.mismatch_rows_col_input, check_types=True)
+
+        assert counts == self.doc1_perf_dict
+
+    def test_get_doc_ent_counts_doc1_perf_mismatch_rows(self):
+        counts, mismatch_rows = emo.get_doc_ent_counts(self.doc1_pred_perf, self.doc1_gold,
+                {'tp':0, 'fp':0, 'fn':0}, self.mismatch_rows_col_input, check_types=True)
+
+        assert mismatch_rows == self.doc1_perf_mismatch_rows
+
+    def test_get_doc_ent_counts_doc2_perf(self):
+        counts, mismatch_rows = emo.get_doc_ent_counts(self.doc2_pred_perf, self.doc2_gold,
+                {'tp':0, 'fp':0, 'fn':0}, self.doc2_mismatch, check_types=True)
+
+        assert counts == self.doc2_perf_dict
+
+    def test_get_doc_ent_counts_doc2_perf_mismatch(self):
+        counts, mismatch_rows = emo.get_doc_ent_counts(self.doc2_pred_perf, self.doc2_gold,
+                {'tp':0, 'fp':0, 'fn':0}, self.doc2_mismatch, check_types=True)
+
+        assert mismatch_rows == self.doc2_mismatch
+
+    def test_get_doc_ent_counts_doc1_imperf(self):
+        counts, mismatch_rows = emo.get_doc_ent_counts(self.doc1_pred_imperf, self.doc1_gold,
+                {'tp':0, 'fp':0, 'fn':0}, self.mismatch_rows_col_input, check_types=True)
+
+        assert counts == self.doc1_imperf_dict
+
+    def test_get_doc_ent_counts_doc1_imperf_mismatch(self):
+        counts, mismatch_rows = emo.get_doc_ent_counts(self.doc1_pred_imperf, self.doc1_gold,
+                {'tp':0, 'fp':0, 'fn':0}, self.mismatch_rows_col_input, check_types=True)
+
+        assert mismatch_rows == self.doc1_imperf_mismatch_rows
+
+    def test_get_doc_ent_counts_doc2_imperf(self):
+        counts, mismatch_rows = emo.get_doc_ent_counts(self.doc2_pred_imperf, self.doc2_gold,
+                {'tp':0, 'fp':0, 'fn':0}, self.doc2_mismatch, check_types=True)
+
+        assert counts == self.doc2_imperf_dict
+
+    def test_get_doc_ent_counts_doc2_imperf_mismatch(self):
+        counts, mismatch_rows = emo.get_doc_ent_counts(self.doc2_pred_imperf, self.doc2_gold,
+                {'tp':0, 'fp':0, 'fn':0}, self.doc2_mismatch, check_types=True)
 
         assert mismatch_rows == self.doc2_mismatch
 
