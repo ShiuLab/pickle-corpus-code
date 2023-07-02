@@ -45,91 +45,81 @@ def calculate_CI(prec_samples, rec_samples, f1_samples):
     return [CIs['prec_CI'], CIs['rec_CI'], CIs['f1_CI']]
 
 
-def eliminate_rel_dups(sent, doc_key, sent_type):
+def check_rel_matches(pred, gold_sent, check_types=False, sym_rels=None):
     """
-    Remove duplicates from relations and warn.
-
-    Motivation for this function is that some models make exact duplicate
-    relation predictions for some reason. Removing them doesn't impact
-    prediction, because (a) for telling whether something has been identified
-    as a true positive, we only need to know that it was present once, and (b)
-    in terms of false positives, if two predictions are identical, it doesn't
-    make sense to count them as two separate false positive predictions,
-    especially since the softmax scores from the moedl are identical, making
-    it seem like they're not true multiple predictions and just got duplicated
-    somewhere downstream.
-
-    parameters:
-        sent, list of list: each internal list is a relation
-        doc_key, str: doc ID to use in warning
-        sent_type, str: either "prediction" or "gold standard", what document
-            set the sentence came from, to use in warning
-
-    returns:
-        sent, list of list: The sent but without duplicates
-    """
-    aset = set([tuple(rel) for rel in sent])
-    if len(sent) != len(aset):
-        warnings.warn(
-            f'\nAt least one sentence in {doc_key}\'s {sent_type} '
-            'for this model contains exact duplicates. These will be '
-            'ignored when calculating performance.')
-        sent = [list(rel) for rel in aset]
-
-    return sent
-
-
-def check_rel_matches(pred, gold_sent, check_types=False):
-    """
-    Checks for order-agnostic matches of pred in gold_sent.
+    Checks for matches of pred in gold_sent, order-agnostically if check_types
+    is False or if the type of pred is symmetrical.
 
     Note that pred/gold are relative, can be swapped to get false negatives by
     comparing a "pred" from the gold standard against the "gold_sent" of
     predictions from the model, as is done in get_doc_rel_counts.
 
     parameters:
-        pred, list: 4 integers (entity bounds) and a string (relation type)
+        pred, list: 4 integers (entity bounds) and a string (relation type),
+            with optional softmax and logit scores
         gold_sent, list of list: internal lists are relation representations
             with the same format as pred
         check_types, bool: Whether or not to consider types in evaluations
+        sym_rels, list of str or None: whether any of the relations to be
+            checked are symmetrical
 
     returns:
-        True if an order-agnostic match exists in gold_sent, False otherwise
+        True if a match exists in gold_sent, False otherwise
     """
-    # Make all gold rels into strings of chars to make it easier to
-    # search for character pairs
-    vals_compare = 4 if not check_types else 5
-    gold_rel_strs = []
-    for rel in gold_sent:
-        rel_str = ' '.join([str(i) for i in rel[:vals_compare]])
-        gold_rel_strs.append(rel_str)
-    # Make each ent in the predicted rel into a separate string so
-    # we can search order-agnostically
-    pred_ent_1_str = ' '.join([str(i) for i in pred[:2]])
-    pred_ent_2_str = ' '.join([str(i) for i in pred[2:4]])
-    pred_rel_type = pred[4]
-    # Check if ent 1 is in one of the relations
-    ent1_list = [True if pred_ent_1_str in i else False for i in gold_rel_strs]
-    # Check if ent 2 is in one of the relations
-    ent2_list = [True if pred_ent_2_str in i else False for i in gold_rel_strs]
-    # Check if the relation type is in one of the relations
-    type_list = [True if pred_rel_type in i else False for i in gold_rel_strs]
-    # Indices that both have True in them are matches
-    if not check_types:
-        matches_list = [
-            True if (ent1_list[i] & ent2_list[i]) else False
-            for i in range(len(gold_rel_strs))
-        ]
-    else:
-        matches_list = [
-            True if (ent1_list[i] & ent2_list[i] & type_list[i]) else False
-            for i in range(len(gold_rel_strs))
-            ]
-    # Determine return type
-    if matches_list.count(True) >= 1:
-        return True
-    else:
-        return False
+    # Make sym_rels an empty list if there are None
+    sym_rels = [] if sym_rels is None else sym_rels
+
+    # Checking when order matters is straighforweard
+    if check_types and pred[4] not in sym_rels:
+        gold_sent = [g[:5] for g in gold_sent] # In case there are softmax/logit
+        if pred[:5] in gold_sent:
+            return True
+        else:
+            return False
+
+    # If we don't care about types, or if the type is symmetric, check order-agnostically
+    elif not check_types or pred[4] in sym_rels:
+
+        # Need to mark down whether or not we care about type
+        if pred[4] in sym_rels:
+            vals_compare = 5
+        else: vals_compare = 4
+
+        # Make all gold rels into strings to make it easier to search for ent idx pairs
+        gold_rel_strs = []
+        for rel in gold_sent:
+            rel_str = ' '.join([str(i) for i in rel[:vals_compare]])
+            gold_rel_strs.append(rel_str)
+
+        # Make each ent and type in pred into separate string so we can search order-agnostically
+        pred_ent_1_str = ' '.join([str(i) for i in pred[:2]])
+        pred_ent_2_str = ' '.join([str(i) for i in pred[2:4]])
+        pred_rel_type = pred[4]
+
+        # Check if ent 1 is in one of the relations
+        ent1_list = [True if pred_ent_1_str in i else False for i in gold_rel_strs]
+        # Check if ent 2 is in one of the relations
+        ent2_list = [True if pred_ent_2_str in i else False for i in gold_rel_strs]
+        # Check if the relation type is in one of the relations
+        type_list = [True if pred_rel_type in i else False for i in gold_rel_strs]
+
+        # Indices that all have True in them are matches
+        if pred[4] in sym_rels:
+             matches_list = [
+                True if (ent1_list[i] & ent2_list[i] & type_list[i]) else False
+                for i in range(len(gold_rel_strs))
+                ]
+        else:
+            matches_list = [
+                True if (ent1_list[i] & ent2_list[i]) else False
+                for i in range(len(gold_rel_strs))
+                ]
+
+        # Determine return type
+        if matches_list.count(True) >= 1:
+            return True
+        else:
+            return False
 
 
 def get_doc_ent_counts(doc, gold_std, ent_pos_neg, mismatch_rows,
@@ -155,10 +145,13 @@ def get_doc_ent_counts(doc, gold_std, ent_pos_neg, mismatch_rows,
         mismatch_rows, dict: empty dict if emtpy dict was passed, otherwise
             updated mismatch_rows dict
     """
+    # Whether or not we care about type determines what index we compare to
     vals_compare = 2 if not check_types else 3
+
     # Go through each sentence for entities
     sent_num = 0
     for pred_sent, gold_sent in zip(doc['predicted_ner'], gold_std['ner']):
+
         # Iterate through predictions and check for them in gold standard
         for pred in pred_sent:
             found = False
@@ -174,6 +167,7 @@ def get_doc_ent_counts(doc, gold_std, ent_pos_neg, mismatch_rows,
                     found = True
             if not found:
                 ent_pos_neg['fp'] += 1
+
         # Iterate through gold standard and check for them in predictions
         for gold in gold_sent:
             found = False
@@ -193,7 +187,8 @@ def get_doc_ent_counts(doc, gold_std, ent_pos_neg, mismatch_rows,
     return ent_pos_neg, mismatch_rows
 
 
-def get_doc_rel_counts(doc, gold_std, rel_pos_neg, doc_key, check_types=False):
+def get_doc_rel_counts(doc, gold_std, rel_pos_neg, doc_key, check_types=False,
+                        sym_rels=None):
     """
     Get the true/false positives and false negatives for relation prediction for
     a single document.
@@ -209,6 +204,8 @@ def get_doc_rel_counts(doc, gold_std, rel_pos_neg, doc_key, check_types=False):
         doc_key, str: doc ID, to use for warning if there are exact duplicate
             relations in any of the sentences
         check_types, bool: Whether or not to consider types in evaluations
+        sym_rels, list of str or None: whether any of the relations to be
+            checked are symmetrical
 
     returns:
         rel_pos_neg, dict: updated match counts for relations
@@ -216,22 +213,18 @@ def get_doc_rel_counts(doc, gold_std, rel_pos_neg, doc_key, check_types=False):
     # Go through each sentence for relations
     for pred_sent, gold_sent in zip(doc['predicted_relations'],
                                     gold_std['relations']):
-        # Check for and eliminate duplicates, with warning
-        pred_sent = eliminate_rel_dups(pred_sent, doc_key, "predictions")
-        gold_sent = eliminate_rel_dups(gold_sent, doc_key, "gold standard")
-        # Iterate through the predictions and check for them in the gold
-        # standard. Need to allow for the relations to be in a different
-        # order than in the gold standard
+
+        # Iterate through the predictions and check for them in the gold standard
         for pred in pred_sent:
-            matched = check_rel_matches(pred, gold_sent, check_types)
+            matched = check_rel_matches(pred, gold_sent, check_types, sym_rels)
             if matched:
                 rel_pos_neg['tp'] += 1
             else:
                 rel_pos_neg['fp'] += 1
-        # Iterate through gold standard and check for them in predictions.
-        # Still need to allow for the relations to be in a different order.
+
+        # Iterate through gold standard and check for them in predictions
         for gold in gold_sent:
-            matched = check_rel_matches(gold, pred_sent, check_types)
+            matched = check_rel_matches(gold, pred_sent, check_types, sym_rels)
             if matched:
                 continue
             else:
@@ -243,7 +236,7 @@ def get_doc_rel_counts(doc, gold_std, rel_pos_neg, doc_key, check_types=False):
 def get_f1_input(gold_standard_dicts,
                  prediction_dicts,
                  input_type,
-                 mismatch_rows={}, check_types=False):
+                 mismatch_rows={}, check_types=False, sym_rels=None):
     """
     Get the number of true and false postives and false negatives for the
     model to calculate the following inputs for compute_f1 for both entities
@@ -260,6 +253,8 @@ def get_f1_input(gold_standard_dicts,
         mismatch_rows, dict: empty dict (default) or dict where keys are
             columns for mismatch_df. Only used if not an empty dict.
         check_types, bool: Whether or not to consider types in evaluations
+        sym_rels, list of str or None: whether any of the relations to be
+            checked are symmetrical
 
     returns:
         predicted, int
@@ -272,10 +267,13 @@ def get_f1_input(gold_standard_dicts,
 
     # Rearrange gold standard so that it's a dict with keys that are doc_id's
     gold_standard_dict = {d['doc_key']: d for d in gold_standard_dicts}
+
     # Go through the docs
     for doc in prediction_dicts:
+
         # Get the corresponding gold standard
         gold_std = gold_standard_dict[doc['doc_key']]
+
         # Get tp/fp/fn counts for this document
         if input_type == 'ent':
             pos_neg, mismatch_rows = get_doc_ent_counts(
@@ -283,7 +281,7 @@ def get_f1_input(gold_standard_dicts,
 
         elif input_type == 'rel':
             pos_neg = get_doc_rel_counts(doc, gold_std, pos_neg,
-                                         doc["doc_key"], check_types)
+                                         doc["doc_key"], check_types, sym_rels)
 
     predicted = pos_neg['tp'] + pos_neg['fp']
     gold = pos_neg['tp'] + pos_neg['fn']
@@ -293,7 +291,7 @@ def get_f1_input(gold_standard_dicts,
 
 
 def draw_boot_samples(pred_dicts, gold_std_dicts, num_boot, input_type,
-                        check_types=False):
+                        check_types=False, sym_rels=None):
     """
     Draw bootstrap samples.
 
@@ -303,6 +301,8 @@ def draw_boot_samples(pred_dicts, gold_std_dicts, num_boot, input_type,
         num_boot, int: number of bootstrap samples to draw
         input_type, str: 'ent' or 'rel'
         check_types, bool: Whether or not to consider types in evaluations
+        sym_rels, list of str or None: whether any of the relations to be
+            checked are symmetrical
 
     returns:
         prec_samples, list of float: list of precision values for bootstraps
@@ -315,19 +315,24 @@ def draw_boot_samples(pred_dicts, gold_std_dicts, num_boot, input_type,
 
     # Draw the boot samples
     for _ in range(num_boot):
+
         # Sample prediction dicts with replacement
         pred_samp = np.random.choice(pred_dicts,
                                      size=len(pred_dicts),
                                      replace=True)
+
         # Get indices of the sampled instances in the pred_dicts list
         idx_list = [pred_dicts.index(i) for i in pred_samp]
+
         # Since the lists are sorted the same, can use indices to get equivalent
         # docs in gold std
         gold_samp = np.array([gold_std_dicts[i] for i in idx_list])
+
         # Calculate performance for the sample
         pred, gold, match, _ = get_f1_input(gold_samp, pred_samp, input_type,
-                                            check_types)
+                                            check_types, sym_rels)
         prec, rec, f1 = compute_f1(pred, gold, match)
+
         # Append each of the performance values to their respective sample lists
         prec_samples.append(prec)
         rec_samples.append(rec)
@@ -338,7 +343,7 @@ def draw_boot_samples(pred_dicts, gold_std_dicts, num_boot, input_type,
 
 def get_performance_row(pred_file, gold_std_file, bootstrap,
                         num_boot, df_rows, mismatch_rows, map_types, entity_map,
-                        relation_map, check_types=False,):
+                        relation_map, check_types=False, sym_rels=None):
     """
     Gets performance metrics and returns as a list.
 
@@ -355,6 +360,8 @@ def get_performance_row(pred_file, gold_std_file, bootstrap,
         entity_map, str: path to entity map if map_types, else ''
         relation_map, str: path to relation map if map_types, else ''
         check_types, bool: Whether or not to consider types in evaluations
+        sym_rels, list of str or None: whether any of the relations to be
+            checked are symmetrical
 
 
     returns:
@@ -419,10 +426,12 @@ def get_performance_row(pred_file, gold_std_file, bootstrap,
     # Bootstrap sampling
     if bootstrap:
         ent_boot_samples = draw_boot_samples(pred_dicts, gold_std_dicts,
-                                             num_boot, 'ent', check_types)
+                                             num_boot, 'ent', check_types,
+                                             sym_rels)
         if pred_rels:
             rel_boot_samples = draw_boot_samples(pred_dicts, gold_std_dicts,
-                                                 num_boot, 'rel', check_types)
+                                                 num_boot, 'rel', check_types,
+                                                 sym_rels)
 
         # Calculate confidence interval
         ent_CIs = calculate_CI(ent_boot_samples[0], ent_boot_samples[1],
@@ -466,7 +475,7 @@ def get_performance_row(pred_file, gold_std_file, bootstrap,
         ent_means = compute_f1(pred_ent, gold_ent, match_ent)
         if pred_rels:
             pred_rel, gold_rel, match_rel, _ = get_f1_input(
-                gold_std_dicts, pred_dicts, 'rel', check_types)
+                gold_std_dicts, pred_dicts, 'rel', check_types, sym_rels)
             rel_means = compute_f1(pred_rel, gold_rel, match_rel)
         else:
             rel_means = [np.nan for i in range(3)]
@@ -484,7 +493,7 @@ def get_performance_row(pred_file, gold_std_file, bootstrap,
 
 
 def main(gold_standard, out_name, predictions, check_types, bootstrap, num_boot,
-         save_mismatches, map_types, entity_map, relation_map):
+         save_mismatches, map_types, entity_map, relation_map, sym_rels):
 
     # Calculate performance
     verboseprint('\nCalculating performance...')
@@ -523,7 +532,8 @@ def main(gold_standard, out_name, predictions, check_types, bootstrap, num_boot,
         df_rows, mismatch_rows = get_performance_row(model, gold_standard,
                                                      bootstrap,
                                                      num_boot, df_rows,
-                                                     mismatch_rows, check_types)
+                                                     mismatch_rows, check_types,
+                                                     sym_rels)
         if save_mismatches:
             # Add the model string onto the mismatch_rows df
             mismatch_col_lens = list(
@@ -606,6 +616,9 @@ if __name__ == "__main__":
         '-relation_map',
         type=str,
         help='Path to relation map, required if --map_types is provided')
+    parser.add_argument('-sym_rels', type=str, nargs='+',
+        help='Relations that should be evaluated symmetrically',
+        default='')
     parser.add_argument(
         '--save_mismatches',
         action='store_true',
@@ -636,6 +649,9 @@ if __name__ == "__main__":
     args.entity_map = abspath(args.entity_map)
     args.relation_map = abspath(args.relation_map)
 
+    if args.sym_rels == '':
+        args.sym_rels = None
+
     verboseprint = print if args.verbose else lambda *a, **k: None
 
     pred_files = [
@@ -645,4 +661,4 @@ if __name__ == "__main__":
 
     main(args.gold_standard, args.out_name, pred_files, args.check_types,
          args.bootstrap, args.num_boot, args.save_mismatches, args.map_types,
-         args.entity_map, args.relation_map)
+         args.entity_map, args.relation_map, args.sym_rels)
