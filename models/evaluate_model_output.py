@@ -8,7 +8,9 @@ import argparse
 from os.path import abspath, basename, join, splitext
 from os import listdir
 import warnings
-
+import sys
+sys.path.append('../annotation/abstract_scripts')
+from map_dataset_types import map_jsonl
 from dygie.training.f1 import compute_f1  # Must have dygiepp developed in env
 import jsonlines
 import pandas as pd
@@ -330,7 +332,7 @@ def draw_boot_samples(pred_dicts, gold_std_dicts, num_boot, input_type,
 
         # Calculate performance for the sample
         pred, gold, match, _ = get_f1_input(gold_samp, pred_samp, input_type,
-                                            check_types, sym_rels)
+                                            check_types=check_types, sym_rels=sym_rels)
         prec, rec, f1 = compute_f1(pred, gold, match)
 
         # Append each of the performance values to their respective sample lists
@@ -342,8 +344,8 @@ def draw_boot_samples(pred_dicts, gold_std_dicts, num_boot, input_type,
 
 
 def get_performance_row(pred_file, gold_std_file, bootstrap,
-                        num_boot, df_rows, mismatch_rows, map_types, entity_map,
-                        relation_map, check_types=False, sym_rels=None):
+                        num_boot, df_rows, mismatch_rows, map_types=False, entity_map='',
+                        relation_map='', check_types=False, sym_rels=None):
     """
     Gets performance metrics and returns as a list.
 
@@ -471,7 +473,7 @@ def get_performance_row(pred_file, gold_std_file, bootstrap,
     else:
         # Calculate performance
         pred_ent, gold_ent, match_ent, mismatch_rows = get_f1_input(
-            gold_std_dicts, pred_dicts, 'ent', mismatch_rows, check_types)
+            gold_std_dicts, pred_dicts, 'ent', mismatch_rows, check_types=check_types)
         ent_means = compute_f1(pred_ent, gold_ent, match_ent)
         if pred_rels:
             pred_rel, gold_rel, match_rel, _ = get_f1_input(
@@ -532,8 +534,10 @@ def main(gold_standard, out_name, predictions, check_types, bootstrap, num_boot,
         df_rows, mismatch_rows = get_performance_row(model, gold_standard,
                                                      bootstrap,
                                                      num_boot, df_rows,
-                                                     mismatch_rows, check_types,
-                                                     sym_rels)
+                                                     mismatch_rows=mismatch_rows, map_types=map_types,
+                                                     check_types=check_types,
+                                                     sym_rels=sym_rels)
+
         if save_mismatches:
             # Add the model string onto the mismatch_rows df
             mismatch_col_lens = list(
@@ -611,11 +615,13 @@ if __name__ == "__main__":
     parser.add_argument(
         '-entity_map',
         type=str,
-        help='Path to entity map, required if --map_types is provided')
+        help='Path to entity map, required if --map_types is provided',
+        default='')
     parser.add_argument(
         '-relation_map',
         type=str,
-        help='Path to relation map, required if --map_types is provided')
+        help='Path to relation map, required if --map_types is provided',
+        default='')
     parser.add_argument('-sym_rels', type=str, nargs='+',
         help='Relations that should be evaluated symmetrically',
         default='')
