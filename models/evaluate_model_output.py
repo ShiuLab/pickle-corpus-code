@@ -171,10 +171,10 @@ def get_doc_ent_counts(doc, gold_std, ent_pos_neg, mismatch_rows,
                 ent_pos_neg['fp'] += 1
 
         # Iterate through gold standard and check for them in predictions
-        for gold in gold_sent:
+        for gold_ent in gold_sent:
             found = False
-            for pred in pred_sent:
-                if gold[:vals_compare] == pred[:vals_compare]:
+            for pred_ent in pred_sent:
+                if gold_ent[:vals_compare] == pred_ent[:vals_compare]:
                     found = True
             if not found:
                 ent_pos_neg['fn'] += 1
@@ -182,8 +182,8 @@ def get_doc_ent_counts(doc, gold_std, ent_pos_neg, mismatch_rows,
                     mismatch_rows['doc_key'].append(doc['doc_key'])
                     mismatch_rows['mismatch_type'].append(0)
                     mismatch_rows['sent_num'].append(sent_num)
-                    mismatch_rows['ent_list'].append(gold)
-                    mismatch_rows['ent_type'].append(gold[2])
+                    mismatch_rows['ent_list'].append(gold_ent)
+                    mismatch_rows['ent_type'].append(gold_ent[2])
         sent_num += 1
 
     return ent_pos_neg, mismatch_rows

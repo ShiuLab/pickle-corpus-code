@@ -1239,11 +1239,11 @@ class TestGetF1InputWithTypes:
 
         self.imperf_mismatch_rows = {
             'doc_key': ['doc1', 'doc1', 'doc1', 'doc1'],
-            'mismatch_type': [0, 1, 1, 0],
+            'mismatch_type': [1, 0, 1, 0],
             'sent_num': [0, 0, 1, 1],
-            'ent_list': [[0, 1, "Hello"], [6, 6, "Person"], [12, 13, "Person"],
+            'ent_list': [[6, 6, "Person"], [0, 1, "Hello"], [12, 13, "Person"],
                          [14, 15, "Protein"]],
-            'ent_type': ["Hello", "Person", "Person", "Protein"]
+            'ent_type': ["Person", "Hello", "Person", "Protein"]
         }
 
         self.pred_incorr_idxs_both_syms = [{
