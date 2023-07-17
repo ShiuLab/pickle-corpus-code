@@ -13,6 +13,7 @@ sys.path.append('../annotation/abstract_scripts')
 from map_dataset_types import map_jsonl
 from dygie.training.f1 import compute_f1  # Must have dygiepp developed in env
 import jsonlines
+import json
 import pandas as pd
 import numpy as np
 
@@ -497,7 +498,7 @@ def get_performance_row(pred_file, gold_std_file, bootstrap,
 def main(gold_standard, out_name, predictions, check_types, bootstrap, num_boot,
          save_mismatches, map_types, entity_map, relation_map, sym_rels):
 
-    # Calculate performance
+    # Some setup before performance calculation
     verboseprint('\nCalculating performance...')
     if bootstrap:
         cols = [
@@ -529,12 +530,22 @@ def main(gold_standard, out_name, predictions, check_types, bootstrap, num_boot,
         # returns
         mismatch_rows = {}
 
+    # Read in the maps
+    if entity_map != '':
+        with open(entity_map) as myf:
+            entity_map = json.load(myf)
+    if relation_map != '':
+        with open(relation_map) as myf:
+            relation_map = json.load(myf)
+
+    # Calculate performance
     for model in predictions:
         verboseprint(f'\nEvaluating model predictions from file {model}...')
         df_rows, mismatch_rows = get_performance_row(model, gold_standard,
                                                      bootstrap,
                                                      num_boot, df_rows,
                                                      mismatch_rows=mismatch_rows, map_types=map_types,
+                                                     entity_map=entity_map, relation_map=relation_map,
                                                      check_types=check_types,
                                                      sym_rels=sym_rels)
 
@@ -645,15 +656,25 @@ if __name__ == "__main__":
             'you would like to use --save_mismatches')
 
     if args.map_types:
-        assert (args.entity_map != '') and (args.relation_map != ''), (
-            'One or more of entity_map and relation_map has not been specified '
-            ', both are required when map_types is passed')
+        if (args.entity_map != '') and (args.relation_map == ''):
+            warnings.warn(
+            'relation_map has not been specified, unless this model does not '
+            'predict relations, the output of this script will likely be '
+            'incorrect')
+        elif (args.entity_map == '') and (args.relation_map != ''):
+            raise  Exception('A relation map has been provided, but no entity '
+            'map, please provide entity map and try again')
+        elif (args.entity_map == '') and (args.relation_map == ''):
+            raise Exception('map_types has been specified but no maps have '
+            'been passe,d please try again')
 
     args.gold_standard = abspath(args.gold_standard)
     args.out_name = abspath(args.out_name)
     args.prediction_dir = abspath(args.prediction_dir)
-    args.entity_map = abspath(args.entity_map)
-    args.relation_map = abspath(args.relation_map)
+    if args.entity_map != '':
+        args.entity_map = abspath(args.entity_map)
+    if args.relation_map != '':
+        args.relation_map = abspath(args.relation_map)
 
     if args.sym_rels == '':
         args.sym_rels = None

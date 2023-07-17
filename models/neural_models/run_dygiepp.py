@@ -98,11 +98,18 @@ def run_model(formatted_data_path, model, dygiepp_path, top_dir,
     allen_out_path = f'{top_dir}/allennlp_output/{out_name}_{model}_allennlp_stdout.txt'
 
     # Run model
-    model_run = (
-        f'allennlp predict {dygiepp_path}/pretrained/{model}.tar.gz '
-        f'{formatted_data_path} --predictor dygie --include-package '
-        f'dygie --use-dataset-reader --output-file {out_path} '
-        '--cuda-device 0 --silent')
+    if exists(f'{dygiepp_path}/pretrained/{model}.tar.gz'):
+        model_run = (
+            f'allennlp predict {dygiepp_path}/pretrained/{model}.tar.gz '
+            f'{formatted_data_path} --predictor dygie --include-package '
+            f'dygie --use-dataset-reader --output-file {out_path} '
+            '--cuda-device 0 --silent')
+    elif exists(f'{dygiepp_path}/models/{model}'):
+        model_run = (
+            f'allennlp predict {dygiepp_path}/models/{model} '
+            f'{formatted_data_path} --predictor dygie --include-package '
+            f'dygie --use-dataset-reader --output-file {out_path} '
+            '--cuda-device 0 --silent')
     out = subprocess.run(model_run, capture_output=True, shell=True)
 
     # Convert bytes to string so they can be written to a file
@@ -158,11 +165,11 @@ def check_models(models_to_run, dygiepp_path):
     """
     for model in models_to_run:
         if f'{model}.tar.gz' not in listdir(f'{dygiepp_path}/pretrained'):
-            print(model)
-            raise ModelNotFoundError(
-                'One or mode requested models has not '
-                'been downloaded to the dygiepp/pretrained directory. Please download '
-                'models and try again.')
+            if model not in listdir(f'{dygiepp_path}/models'):
+                raise ModelNotFoundError(
+                    'One or mode requested models has not '
+                    'been downloaded to the dygiepp/pretrained directory. Please download '
+                    'models and try again.')
 
 
 def check_prefix(top_dir, out_prefix):
@@ -306,21 +313,23 @@ if __name__ == "__main__":
         'If already formatted, file is copied to formatted_data to be '
         'manipulated (change dataset name) for model input.')
     parser.add_argument(
-        'gold_standard',
-        type=str,
+        '-gold_standard',
+        type=str, default='',
         help='Path to gold standard for model evaulation. Models are '
-        'evaluated using the script evaluate_model_output.py.')
-    parser.add_argument('--no_eval', action='store_false',
+        'evaluated using the script evaluate_model_output.py using simplest '
+        'options if --no_eval is not passed.')
+    parser.add_argument('--no_eval', action='store_true',
             help='Pass to skip evaluating the data.')
     parser.add_argument(
         '-models_to_run',
         nargs='+',
         help='List of models to run. Options are ace05-relation, scierc, '
-        'scierc-lightweight, genia, genia-lightweight and chemprot. Default '
+        'scierc-lightweight, genia, genia-lightweight, chemprot, and pickle '
+        'and seedev, if those models have been  trained. Default '
         'is all.',
         default=[
             'ace05-relation', 'scierc', 'scierc-lightweight', 'genia',
-            'genia-lightweight', 'chemprot'
+            'genia-lightweight', 'chemprot', 'pickle', 'seedev'
         ])
     parser.add_argument(
         '-v',

@@ -127,7 +127,7 @@ def run_models(model_paths, new_data_path, pure_path, top_dir,
                         f'{prev_model_path} --model {model_name_tup[0]} '
                         f'--output_dir {unzipped_model_path} --task {task}')
 
-        out = subprocess.run(model_run, capture_output=True, shell=True)
+        out = subprocess.run(model_run, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 
         # Convert bytes to string so they can be written to a file
         stdout_s = out.stdout.decode("utf-8")
@@ -289,7 +289,7 @@ def check_make_filetree(top_dir):
 
 
 def main(data_path, gold_std_path, pure_path, top_dir, out_prefix, model_path,
-        format_data):
+        format_data, no_eval):
 
     # Check if the top_dir & other folders exist already
     verboseprint('\nChecking if file tree exists and creating it if not...')
@@ -323,8 +323,9 @@ def main(data_path, gold_std_path, pure_path, top_dir, out_prefix, model_path,
                             out_prefix)
 
     # Evaluate models
-    verboseprint('\nEvaluating models...')
-    evaluate_models(top_dir, gold_std_path, out_prefix)
+    if not no_eval:
+        verboseprint('\nEvaluating models...')
+        evaluate_models(top_dir, gold_std_path, out_prefix)
 
     verboseprint('\n\nDone!\n\n')
 
@@ -335,9 +336,6 @@ if __name__ == "__main__":
     parser.add_argument('data_path', type=str,
                         help='Path to dygiepp-formatted data on which '
                         'to run model')
-    parser.add_argument('gold_std_path', type=str,
-                        help='Path to gold standard annotations for '
-                        'evaluation')
     parser.add_argument('pure_path', type=str,
                         help='Path to the PURE repository.')
     parser.add_argument('top_dir', type=str,
@@ -360,6 +358,11 @@ if __name__ == "__main__":
             help='Whether or not to format the dataset. Necessary if the '
             'dataset contains a "dataset" key, or is unlabeled and missing '
             'the fields "ner" and "relations"')
+    parser.add_argument('--no_eval', action='store_true',
+        help='Whether or not to evaluate the model with simplest possible option')
+    parser.add_argument('-gold_std_path', type=str, default='',
+            help='Path to gold standard annotations for '
+            'evaluation. Required if --no_eval is not passed.')
     parser.add_argument(
         '-v',
         '--verbose',
@@ -369,13 +372,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     args.data_path = abspath(args.data_path)
-    args.gold_std_path = abspath(args.gold_std_path)
     args.pure_path = abspath(args.pure_path)
     args.top_dir = abspath(args.top_dir)
     if args.model_path != '':
         args.model_path = abspath(args.model_path)
+    if not args.no_eval:
+        args.gold_std_path = abspath(args.gold_std_path)
 
     verboseprint = print if args.verbose else lambda *a, **k: None
 
     main(args.data_path, args.gold_std_path, args.pure_path, args.top_dir,
-            args.out_prefix, args.model_path, args.format_data)
+            args.out_prefix, args.model_path, args.format_data, args.no_eval)

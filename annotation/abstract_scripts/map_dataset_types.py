@@ -54,21 +54,23 @@ def map_jsonl(dygiepp_data, entity_map, relation_map, predicted=True):
                 else:
                     ent_idx = doc[ner_map][i].index(ent)
                     doc[ner_map][i][ent_idx][2] = new_type
-            for rel in deepcopy(doc[rel_map][i]):
-                new_type = relation_map[rel[4]]
-                if new_type == '':
-                    dropped_rels += 1
-                    doc[rel_map][i].remove(rel)
-                else:
-                    e1 = [rel[0], rel[1]]
-                    e2 = [rel[2], rel[3]]
-                    if (e1 in dropped_ent_idxs) or (e2 in dropped_ent_idxs):
+            try:
+                for rel in deepcopy(doc[rel_map][i]):
+                    new_type = relation_map[rel[4]]
+                    if new_type == '':
                         dropped_rels += 1
                         doc[rel_map][i].remove(rel)
                     else:
-                        rel_idx = doc[rel_map][i].index(rel)
-                        doc[rel_map][i][rel_idx][4] = new_type
-                        
+                        e1 = [rel[0], rel[1]]
+                        e2 = [rel[2], rel[3]]
+                        if (e1 in dropped_ent_idxs) or (e2 in dropped_ent_idxs):
+                            dropped_rels += 1
+                            doc[rel_map][i].remove(rel)
+                        else:
+                            rel_idx = doc[rel_map][i].index(rel)
+                            doc[rel_map][i][rel_idx][4] = new_type
+            except KeyError:
+                continue
 
     return dropped_ents, dropped_rels
 
