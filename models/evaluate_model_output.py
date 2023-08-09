@@ -165,11 +165,21 @@ def get_doc_ent_counts(doc, gold_std, ent_pos_neg, mismatch_rows,
                         mismatch_rows['doc_key'].append(doc['doc_key'])
                         mismatch_rows['mismatch_type'].append(1)
                         mismatch_rows['sent_num'].append(sent_num)
-                        mismatch_rows['ent_list'].append(gold_ent)
-                        mismatch_rows['ent_type'].append(gold_ent[2])
+                        mismatch_rows['gold_ent_list'].append(gold_ent)
+                        mismatch_rows['gold_ent_type'].append(gold_ent[2])
+                        mismatch_rows['pred_ent_list'].append(pred)
+                        mismatch_rows['pred_ent_type'].append(pred[2])
                     found = True
             if not found:
                 ent_pos_neg['fp'] += 1
+                if len(mismatch_rows.keys()) != 0:
+                    mismatch_rows['doc_key'].append(doc['doc_key'])
+                    mismatch_rows['mismatch_type'].append(2)
+                    mismatch_rows['sent_num'].append(sent_num)
+                    mismatch_rows['gold_ent_list'].append(np.nan)
+                    mismatch_rows['gold_ent_type'].append(np.nan)
+                    mismatch_rows['pred_ent_list'].append(pred)
+                    mismatch_rows['pred_ent_type'].append(pred[2])
 
         # Iterate through gold standard and check for them in predictions
         for gold_ent in gold_sent:
@@ -183,8 +193,10 @@ def get_doc_ent_counts(doc, gold_std, ent_pos_neg, mismatch_rows,
                     mismatch_rows['doc_key'].append(doc['doc_key'])
                     mismatch_rows['mismatch_type'].append(0)
                     mismatch_rows['sent_num'].append(sent_num)
-                    mismatch_rows['ent_list'].append(gold_ent)
-                    mismatch_rows['ent_type'].append(gold_ent[2])
+                    mismatch_rows['gold_ent_list'].append(gold_ent)
+                    mismatch_rows['gold_ent_type'].append(gold_ent[2])
+                    mismatch_rows['pred_ent_list'].append(np.nan)
+                    mismatch_rows['pred_ent_type'].append(np.nan)
         sent_num += 1
 
     return ent_pos_neg, mismatch_rows
@@ -516,12 +528,13 @@ def main(gold_standard, out_name, predictions, check_types, bootstrap, num_boot,
     if save_mismatches:
         # 'mismatch_type' column: 1 if the model correctly matched the gold
         # standard (true positive), 0 if the model failed to match the gold
-        # standard (false negative)
+        # standard (false negative), 2 if the model predicted something that
+        # wasn't in the gold standard (false positive)
         # doc_key + sent_num + ent_list allows recovery of the text of the
         # entity later on, while ent_type makes type access easier
         mismatch_cols = [
-            'doc_key', 'mismatch_type', 'sent_num', 'ent_list', 'ent_type',
-            'model'
+            'doc_key', 'mismatch_type', 'sent_num', 'gold_ent_list',
+            'gold_ent_type', 'pred_ent_list', 'pred_ent_type', 'model'
         ]
         mismatch_rows = {k: [] for k in mismatch_cols}
     else:
