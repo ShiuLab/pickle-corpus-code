@@ -156,10 +156,12 @@ def get_doc_ent_counts(doc, gold_std, ent_pos_neg, mismatch_rows,
     for pred_sent, gold_sent in zip(doc['predicted_ner'], gold_std['ner']):
 
         # Iterate through predictions and check for them in gold standard
-        for pred in pred_sent:
+        for pred_ent in pred_sent:
+            pred_ent[2] = pred_ent[2].lower()
             found = False
             for gold_ent in gold_sent:
-                if pred[:vals_compare] == gold_ent[:vals_compare]:
+                gold_ent[2] = gold_ent[2].lower()
+                if pred_ent[:vals_compare] == gold_ent[:vals_compare]:
                     ent_pos_neg['tp'] += 1
                     if len(mismatch_rows.keys()) != 0:
                         mismatch_rows['doc_key'].append(doc['doc_key'])
@@ -167,8 +169,8 @@ def get_doc_ent_counts(doc, gold_std, ent_pos_neg, mismatch_rows,
                         mismatch_rows['sent_num'].append(sent_num)
                         mismatch_rows['gold_ent_list'].append(gold_ent)
                         mismatch_rows['gold_ent_type'].append(gold_ent[2])
-                        mismatch_rows['pred_ent_list'].append(pred)
-                        mismatch_rows['pred_ent_type'].append(pred[2])
+                        mismatch_rows['pred_ent_list'].append(pred_ent)
+                        mismatch_rows['pred_ent_type'].append(pred_ent[2])
                     found = True
             if not found:
                 ent_pos_neg['fp'] += 1
@@ -178,13 +180,15 @@ def get_doc_ent_counts(doc, gold_std, ent_pos_neg, mismatch_rows,
                     mismatch_rows['sent_num'].append(sent_num)
                     mismatch_rows['gold_ent_list'].append(np.nan)
                     mismatch_rows['gold_ent_type'].append(np.nan)
-                    mismatch_rows['pred_ent_list'].append(pred)
-                    mismatch_rows['pred_ent_type'].append(pred[2])
+                    mismatch_rows['pred_ent_list'].append(pred_ent)
+                    mismatch_rows['pred_ent_type'].append(pred_ent[2])
 
         # Iterate through gold standard and check for them in predictions
         for gold_ent in gold_sent:
+            gold_ent[2] = gold_ent[2].lower()
             found = False
             for pred_ent in pred_sent:
+                pred_ent[2] = pred_ent[2].lower()
                 if gold_ent[:vals_compare] == pred_ent[:vals_compare]:
                     found = True
             if not found:

@@ -52,8 +52,10 @@ class TestGetDocEntCountsWithoutTypes:
             'doc_key': [],
             'mismatch_type': [],
             'sent_num': [],
-            'ent_list': [],
-            'ent_type': []
+            'gold_ent_list': [],
+            'gold_ent_type': [],
+            'pred_ent_list': [],
+            'pred_ent_type': []
         }
 
         self.doc1_gold = {
@@ -92,10 +94,28 @@ class TestGetDocEntCountsWithoutTypes:
             'doc_key': ['doc1', 'doc1', 'doc1', 'doc1'],
             'mismatch_type': [1, 1, 1, 1],
             'sent_num': [0, 0, 1, 1],
-            'ent_list': [[0, 1, "ENTITY"], [6, 6, "ENTITY"],
-                         [12, 13, "ENTITY"], [14, 15, "ENTITY"]],
-            'ent_type': ["ENTITY", "ENTITY", "ENTITY", "ENTITY"]
+            'gold_ent_list': [[0, 1, "entity"], [6, 6, "entity"],
+                         [12, 13, "entity"], [14, 15, "entity"]],
+            'gold_ent_type': ["entity", "entity", "entity", "entity"],
+            'pred_ent_list': [[0, 1, "hello"], [6, 6, "person"],
+                         [12, 13, "person"], [14, 15, "protein"]],
+            'pred_ent_type': ["hello", "person", "person", "protein"]
         }
+        self.doc1_pred_capitalization_mismatches = {
+            "doc_key":
+            "doc1",
+            "sentences":
+            [['Hello', 'world', ',', 'my', 'name', 'is', 'Sparty', '.'],
+             [
+                 'My', 'research', 'is', 'about', 'A.', 'thaliana', 'protein',
+                 '5'
+             ]],
+            "predicted_ner": [[[0, 1, "hellO"], [6, 6, "perSon"]],
+                              [[12, 13, "Person"], [14, 15, "PROTEIN"]]]
+            # Make sure that it still matches even if entity
+            # types are different
+        }
+
         self.doc1_perf_dict = {'tp': 4, 'fp': 0, 'fn': 0}
 
         self.doc2_pred_perf = {
@@ -122,13 +142,15 @@ class TestGetDocEntCountsWithoutTypes:
                                [14, 15, "PROTEIN"]]]
         }
         self.doc1_imperf_mismatch_rows = {
-            'doc_key': ['doc1', 'doc1', 'doc1', 'doc1'],
-            'mismatch_type': [1, 0, 1, 0],
-            'sent_num': [0, 0, 1, 1],
-            'sent_num': [0, 0, 1, 1],
-            'ent_list': [[0, 1, "ENTITY"], [6, 6, "ENTITY"],
-                         [14, 15, "ENTITY"], [12, 13, "ENTITY"]],
-            'ent_type': ["ENTITY", "ENTITY", "ENTITY", "ENTITY"]
+            'doc_key': ['doc1', 'doc1', 'doc1', 'doc1', 'doc1', 'doc1'],
+            'mismatch_type': [1, 0, 2, 2, 1, 0],
+            'sent_num': [0, 0, 1, 1, 1, 1],
+            'gold_ent_list': [[0, 1, "entity"], [6, 6, "entity"], np.nan, np.nan,
+                         [14, 15, "entity"], [12, 13, "entity"]],
+            'gold_ent_type': ["entity", "entity", np.nan, np.nan, "entity", "entity"],
+            'pred_ent_list': [[0, 1, "org"], np.nan, [9, 9, "org"], [13, 13, "pers"],
+                         [14, 15, "protein"], np.nan],
+            'pred_ent_type': ["org", np.nan, "org", "pers", "protein", np.nan]
         }
 
         self.doc1_imperf_dict = {'tp': 2, 'fp': 2, 'fn': 2}
@@ -150,6 +172,16 @@ class TestGetDocEntCountsWithoutTypes:
 
         assert counts == self.doc1_perf_dict
 
+    def test_get_doc_ent_counts_doc1_pred_capitalization_mismatches(self):
+        counts, mismatch_rows = emo.get_doc_ent_counts(
+            self.doc1_pred_capitalization_mismatches, self.doc1_gold, {
+                'tp': 0,
+                'fp': 0,
+                'fn': 0
+            }, self.mismatch_rows_col_input)
+
+        assert counts == self.doc1_perf_dict
+
     def test_get_doc_ent_counts_doc1_perf_mismatch_rows(self):
         counts, mismatch_rows = emo.get_doc_ent_counts(
             self.doc1_pred_perf, self.doc1_gold, {
@@ -159,6 +191,17 @@ class TestGetDocEntCountsWithoutTypes:
             }, self.mismatch_rows_col_input)
 
         assert mismatch_rows == self.doc1_perf_mismatch_rows
+
+    def test_get_doc_ent_counts_doc1_capitalization_mismatches_mismatch_rows(self):
+        counts, mismatch_rows = emo.get_doc_ent_counts(
+            self.doc1_pred_capitalization_mismatches, self.doc1_gold, {
+                'tp': 0,
+                'fp': 0,
+                'fn': 0
+            }, self.mismatch_rows_col_input)
+
+        assert mismatch_rows == self.doc1_perf_mismatch_rows
+
 
     def test_get_doc_ent_counts_doc2_perf(self):
         counts, mismatch_rows = emo.get_doc_ent_counts(self.doc2_pred_perf,
@@ -197,6 +240,10 @@ class TestGetDocEntCountsWithoutTypes:
                 'fp': 0,
                 'fn': 0
             }, self.mismatch_rows_col_input)
+        print('\n\n\n\n\n\n')
+        print(mismatch_rows)
+        print('\n\n')
+        print(self.doc1_imperf_mismatch_rows)
 
         assert mismatch_rows == self.doc1_imperf_mismatch_rows
 
@@ -230,8 +277,10 @@ class TestGetDocEntCountsWithTypes:
             'doc_key': [],
             'mismatch_type': [],
             'sent_num': [],
-            'ent_list': [],
-            'ent_type': []
+            'gold_ent_list': [],
+            'gold_ent_type': [],
+            'pred_ent_list': [],
+            'pred_ent_type': []
         }
 
         self.doc1_gold = {
@@ -269,9 +318,12 @@ class TestGetDocEntCountsWithTypes:
             'doc_key': ['doc1', 'doc1', 'doc1', 'doc1'],
             'mismatch_type': [1, 1, 1, 1],
             'sent_num': [0, 0, 1, 1],
-            'ent_list': [[0, 1, "Greeting"], [6, 6, "Person"],
-                         [12, 13, "Person"], [14, 15, "Biological_entity"]],
-            'ent_type': ["Greeting", "Person", "Person", "Biological_entity"]
+            'gold_ent_list': [[0, 1, "greeting"], [6, 6, "person"],
+                         [12, 13, "person"], [14, 15, "biological_entity"]],
+            'gold_ent_type': ["greeting", "person", "person", "biological_entity"],
+            'pred_ent_list': [[0, 1, "greeting"], [6, 6, "person"],
+                         [12, 13, "person"], [14, 15, "biological_entity"]],
+            'pred_ent_type': ["greeting", "person", "person", "biological_entity"]
         }
         self.doc1_perf_dict = {'tp': 4, 'fp': 0, 'fn': 0}
 
@@ -298,14 +350,17 @@ class TestGetDocEntCountsWithTypes:
                               [[9, 9, "Person"], [12, 13, "Person"],
                                [14, 15, "Protein"]]]
         }
+        
         self.doc1_imperf_mismatch_rows = {
-            'doc_key': ['doc1', 'doc1', 'doc1', 'doc1'],
-            'mismatch_type': [1, 0, 1, 0],
-            'sent_num': [0, 0, 1, 1],
-            'sent_num': [0, 0, 1, 1],
-            'ent_list': [[0, 1, "Greeting"], [6, 6, "Person"],
-                         [12, 13, "Person"], [14, 15, "Biological_entity"]],
-            'ent_type': ["Greeting", "Person", "Person", "Biological_entity"]
+            'doc_key': ['doc1', 'doc1', 'doc1', 'doc1', 'doc1', 'doc1'],
+            'mismatch_type': [1, 0, 2, 1, 2, 0],
+            'sent_num': [0, 0, 1, 1, 1, 1],
+            'gold_ent_list': [[0, 1, "greeting"], [6, 6, "person"], np.nan,
+                         [12, 13, "person"], np.nan, [14, 15, "biological_entity"]],
+            'gold_ent_type': ["greeting", "person", np.nan, "person", np.nan, "biological_entity"],
+            'pred_ent_list': [[0, 1, "greeting"], np.nan, [9, 9, "person"],
+                         [12, 13, "person"], [14, 15, "protein"], np.nan],
+            'pred_ent_type': ["greeting", np.nan, "person", "person", "protein", np.nan]
         }
 
         self.doc1_imperf_dict = {'tp': 2, 'fp': 2, 'fn': 2}
@@ -927,8 +982,10 @@ class TestGetF1InputWithoutTypes:
             'doc_key': [],
             'mismatch_type': [],
             'sent_num': [],
-            'ent_list': [],
-            'ent_type': []
+            'gold_ent_list': [],
+            'gold_ent_type': [],
+            'pred_ent_list': [],
+            'pred_ent_type': []
         }
 
         self.gold_std = [{
@@ -973,9 +1030,12 @@ class TestGetF1InputWithoutTypes:
             'doc_key': ['doc1', 'doc1', 'doc1', 'doc1'],
             'mismatch_type': [1, 1, 1, 1],
             'sent_num': [0, 0, 1, 1],
-            'ent_list': [[0, 1, "ENTITY"], [6, 6, "ENTITY"],
-                         [12, 13, "ENTITY"], [14, 15, "ENTITY"]],
-            'ent_type': ["ENTITY", "ENTITY", "ENTITY", "ENTITY"]
+            'gold_ent_list': [[0, 1, "entity"], [6, 6, "entity"],
+                         [12, 13, "entity"], [14, 15, "entity"]],
+            'gold_ent_type': ["entity", "entity", "entity", "entity"],
+            'pred_ent_list': [[0, 1, "hello"], [6, 6, "person"],
+                         [12, 13, "person"], [14, 15, "protein"]],
+            'pred_ent_type': ["hello", "person", "person", "protein"]
         }
         self.perf_pred_num_ent = 4
         self.perf_gold_num_ent = 4
@@ -1011,12 +1071,15 @@ class TestGetF1InputWithoutTypes:
         ]
 
         self.imperf_mismatch_rows = {
-            'doc_key': ['doc1', 'doc1', 'doc1', 'doc1'],
-            'mismatch_type': [1, 1, 1, 0],
-            'sent_num': [0, 0, 1, 1],
-            'ent_list': [[0, 1, "ENTITY"], [6, 6, "ENTITY"],
-                         [12, 13, "ENTITY"], [14, 15, "ENTITY"]],
-            'ent_type': ["ENTITY", "ENTITY", "ENTITY", "ENTITY"]
+            'doc_key': ['doc1', 'doc1', 'doc1', 'doc1', 'doc1', 'doc2'],
+            'mismatch_type': [1, 1, 1, 2, 0, 2],
+            'sent_num': [0, 0, 1, 1, 1, 0],
+            'gold_ent_list': [[0, 1, "entity"], [6, 6, "entity"],
+                         [12, 13, "entity"], np.nan, [14, 15, "entity"], np.nan],
+            'gold_ent_type': ["entity", "entity", "entity", np.nan, "entity", np.nan],
+            'pred_ent_list': [[0, 1, "hello"], [6, 6, "person"],
+                         [12, 13, "person"], [14, 14, "protein"], np.nan, [1, 1, "hello"]],
+            'pred_ent_type': ["hello", "person", "person", "protein", np.nan, "hello"]
         }
         self.imperf_pred_num_ent = 5
         self.imperf_gold_num_ent = 4
@@ -1137,8 +1200,10 @@ class TestGetF1InputWithTypes:
             'doc_key': [],
             'mismatch_type': [],
             'sent_num': [],
-            'ent_list': [],
-            'ent_type': []
+            'gold_ent_list': [],
+            'gold_ent_type': [],
+            'pred_ent_list': [],
+            'pred_ent_type': []
         }
 
         self.gold_std = [{
@@ -1203,9 +1268,12 @@ class TestGetF1InputWithTypes:
             'doc_key': ['doc1', 'doc1', 'doc1', 'doc1'],
             'mismatch_type': [1, 1, 1, 1],
             'sent_num': [0, 0, 1, 1],
-            'ent_list': [[0, 1, "Hello"], [6, 6, "Person"], [12, 13, "Person"],
-                         [14, 15, "Protein"]],
-            'ent_type': ["Hello", "Person", "Person", "Protein"]
+            'gold_ent_list': [[0, 1, "hello"], [6, 6, "person"], [12, 13, "person"],
+                         [14, 15, "protein"]],
+            'gold_ent_type': ["hello", "person", "person", "protein"],
+            'pred_ent_list': [[0, 1, "hello"], [6, 6, "person"], [12, 13, "person"],
+                         [14, 15, "protein"]],
+            'pred_ent_type': ["hello", "person", "person", "protein"]
         }
         self.perf_pred_num_ent = 4
         self.perf_gold_num_ent = 4
@@ -1237,13 +1305,16 @@ class TestGetF1InputWithTypes:
             "predicted_relations": [[]]
         }]
 
-        self.imperf_mismatch_rows = {
-            'doc_key': ['doc1', 'doc1', 'doc1', 'doc1'],
-            'mismatch_type': [1, 0, 1, 0],
-            'sent_num': [0, 0, 1, 1],
-            'ent_list': [[6, 6, "Person"], [0, 1, "Hello"], [12, 13, "Person"],
-                         [14, 15, "Protein"]],
-            'ent_type': ["Person", "Hello", "Person", "Protein"]
+        self.imperf_mismatch_rows_types = {
+            'doc_key': ['doc1', 'doc1', 'doc1', 'doc1', 'doc1', 'doc1', 'doc2'],
+            'mismatch_type': [2, 1, 0, 1, 2, 0, 2],
+            'sent_num': [0, 0, 0, 1, 1, 1, 0],
+            'gold_ent_list': [np.nan, [6, 6, "person"], [0, 1, "hello"], [12, 13, "person"],
+                         np.nan, [14, 15, "protein"], np.nan],
+            'gold_ent_type': [np.nan, "person", "hello", "person", np.nan, "protein", np.nan],
+            'pred_ent_list': [[0, 1, "goodbye"], [6, 6, "person"], np.nan, [12, 13, "person"],
+                         [14, 15, "biological_entity"], np.nan, [1, 1, "hello"]],
+            'pred_ent_type': ["goodbye", "person", np.nan, "person", "biological_entity", np.nan, "hello"]
         }
 
         self.pred_incorr_idxs_both_syms = [{
@@ -1265,6 +1336,18 @@ class TestGetF1InputWithTypes:
             "predicted_ner": [[[1, 1, "Hello"]]],
             "predicted_relations": [[]]
         }]
+        
+        self.imperf_mismatch_rows_idxs = {
+            'doc_key': ['doc1', 'doc1', 'doc1', 'doc1', 'doc1', 'doc1', 'doc2'],
+            'mismatch_type': [2, 1, 0, 1, 2, 0, 2],
+            'sent_num': [0, 0, 0, 1, 1, 1, 0],
+            'gold_ent_list': [np.nan, [6, 6, "person"], [0, 1, "hello"], [12, 13, "person"],
+                         np.nan, [14, 15, "protein"], np.nan],
+            'gold_ent_type': [np.nan, "person", "hello", "person", np.nan, "protein", np.nan],
+            'pred_ent_list': [[1, 1, "hello"], [6, 6, "person"], np.nan, [12, 13, "person"],
+                         [14, 16, "protein"], np.nan, [1, 1, "hello"]],
+            'pred_ent_type': ["hello", "person", np.nan, "person", "protein", np.nan, "hello"]
+        }
 
         self.imperf_pred_num_ent = 5
         self.imperf_gold_num_ent = 4
@@ -1461,7 +1544,7 @@ class TestGetF1InputWithTypes:
             self.mismatch_rows_col_input,
             check_types=True)
 
-        assert mismatch_rows == self.imperf_mismatch_rows
+        assert mismatch_rows == self.imperf_mismatch_rows_types
 
     def test_get_f1_input_incorr_types_both_syms_predicted_rel(self):
 
@@ -1538,7 +1621,7 @@ class TestGetF1InputWithTypes:
             self.mismatch_rows_col_input,
             check_types=True)
 
-        assert mismatch_rows == self.imperf_mismatch_rows
+        assert mismatch_rows == self.imperf_mismatch_rows_idxs
 
     def test_get_f1_input_incorr_idxs_both_syms_predicted_rel(self):
 
