@@ -36,7 +36,9 @@ def main(data_path, type_map):
                 for sent in value:
                     updated_sent = []
                     for ent in sent:
-                        if ent[2].lower() in [t.lower() for t in type_map_dict.keys()]:
+                        if ent[2].lower() in [t.lower() for t in type_map_dict.values()]:
+                            if ent[2].lower() == 'cell':
+                                ent[2] = 'cell_type'
                             updated_sent.append(ent)
                     updated_ner.append(updated_sent)
                 updated_doc[key] = updated_ner
