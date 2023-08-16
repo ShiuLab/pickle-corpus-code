@@ -8,52 +8,36 @@ import argparse
 from os.path import abspath
 
 import jsonlines
+import json
 from dataset import Dataset
 
-
-def quantify_out_of_vocab(dset1, dset2):
+def not_in_pickle(pickle, dset2):
     """
-    Quantify metrics about how much of each dataset is out of the vocabulary of
-    the other. Calculates:
-        * Fraction of dset1 that is OOV for dset2
-        * Fraction of dset2 that is OOV for dset1
-
+    Define the fraction of dset2 that is not in the PICKLE vocab.
+    
     parameters:
-        dset1, Dataset obj: first dataset
-        dset2, Datasetobj: second dataset
+        pickle, Dataset obj: PICKLE
+        dset2, Dataset obj: comparison dataset
 
     returns:
-        oov, dict: contains the words that are oov for each dset
-        oov_fracs, dict: contains the metrics. Keys are metric names and values
-            are the metrics.
+        fracs, dict of float: fraction of PICKLE that is OOV for dset2 for each
+            of unigrams, bigrams and trigrams
+        oov_grams, dict of list of str: OOV grams for each of unigrams, bigrams,
+            and trigrams
     """
-    # Define names for dsets 1 & 2
-    dset1_name = dset1.get_dataset_name()
-    dset2_name = dset2.get_dataset_name()
-
     # Get the vocabularies
-    dset1_vocab = dset1.get_dataset_vocab()
+    pickle_vocab = pickle.get_dataset_vocab()
     dset2_vocab = dset2.get_dataset_vocab()
-
+    
     # Compare
-    oovs = {}
-    for key in dset1_vocab.keys():
-        oov_dset1 = dset1_vocab[key] - dset2_vocab[key]
-        oov_dset2 = dset2_vocab[key] - dset1_vocab[key]
-        oovs[f'{key}_oov_{dset1_name}'] = list(oov_dset1)
-        oovs[f'{key}_oov_{dset2_name}'] =  list(oov_dset2)
-
-    # Get fraction
-    oov_fracs = {}
-    for key in oovs.keys():
-        gram_num = key.split('_')[0]
-        if dset1_name in key:
-            oov_frac = len(oovs[key])/len(dset2_vocab[gram_num])
-        elif dset2_name in key:
-            oov_frac = len(oovs[key])/len(dset1_vocab[gram_num])
-        oov_fracs[f'{key}_frac'] = oov_frac
-
-    return oovs, oov_fracs
+    fracs = {}
+    oov_grams = {}
+    for key in pickle_vocab.keys():
+        oov_dset1 = pickle_vocab[key] - dset2_vocab[key]
+        fracs[key] = len(oov_dset1)/len(pickle_vocab[key])
+        oov_grams[key] = list(oov_dset1)
+    
+    return fracs, oov_grams
 
 
 def read_dset(path, dset_name):
@@ -75,35 +59,37 @@ def read_dset(path, dset_name):
     return dset
 
 
-def main(dset1_name, dset1_path, dset2_name, dset2_path,
+def main(pickle_path, dset2_path, dset2_name, 
         out_loc, out_prefix):
 
     # Read in the datasets
     verboseprint('\nReading in the datasets...')
-    dset1 = read_dset(dset1_path, dset1_name)
+    pickle = read_dset(pickle_path, 'PICKLE')
     dset2 = read_dset(dset2_path, dset2_name)
 
     # Look for out-of-vocabulary words
     verboseprint('\nComparing out-of-vocabulary words...')
-    oov, oov_fracs = quantify_out_of_vocab(dset1, dset2)
-    oov_save_name = f'{out_loc}/{out_prefix}_oov_comparison.jsonl'
-    with jsonlines.open(oov_save_name, mode='w') as writer:
-        writer.write_all([oov_fracs, oov])
-    verboseprint(f'Saved out-of-vocabulary comparison as {oov_save_name}')
+    fracs, oov_grams = not_in_pickle(pickle, dset2)
+    frac_save_name = f'{out_loc}/{out_prefix}_fracs.json'
+    oov_save_name = f'{out_loc}/{out_prefix}_oovs.json'
+    with open(frac_save_name, mode='w') as myf:
+       json.dump(fracs, myf)
+    with open(oov_save_name, mode='w') as myf:
+       json.dump(oov_grams, myf)
+    verboseprint(f'Saved out-of-vocabulary comparison as {oov_save_name} and '
+                f'{frac_save_name}')
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description='Compare two annotated datasets')
 
-    parser.add_argument('dset1_name', type=str,
-            help='String identifying dataset 1')
-    parser.add_argument('dset1', type=str,
-            help='Path to jsonl file containing the first dataset to compare')
-    parser.add_argument('dset2_name', type=str,
-            help='String identifying dataset 2')
+    parser.add_argument('pickle_path', type=str,
+            help='Path to jsonl file containing PICKLE to compare')
     parser.add_argument('dset2', type=str,
-            help='Path to jsonl file containing the second dataset to compare')
+            help='Path to jsonl file containing the dataset to compare')
+    parser.add_argument('dset2_name', type=str,
+            help='String identifying the dataset to compare')
     parser.add_argument('out_loc', type=str,
             help='Path to save output')
     parser.add_argument('out_prefix', type=str,
@@ -113,10 +99,10 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    args.dset1 = abspath(args.dset1)
+    args.pickle_path = abspath(args.pickle_path)
     args.dset2 = abspath(args.dset2)
     args.out_loc = abspath(args.out_loc)
 
     verboseprint = print if args.verbose else lambda *a, **k: None
-    main(args.dset1_name,  args.dset1, args.dset2_name, args.dset2,
-             args.out_loc, args.out_prefix)
+    main(args.pickle_path, args.dset2, args.dset2_name, args.out_loc,
+        args.out_prefix)

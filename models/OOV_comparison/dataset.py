@@ -18,7 +18,7 @@ class Document():
         self.full_text = " ".join([" ".join(i) for i in doc_dict["sentences"]])
         self.sentences = doc_dict["sentences"]
         self.tokens = [word for sent in doc_dict["sentences"] for word in sent]
-        self.uni_vocab = set(self.tokens)
+        self.uni_vocab = self.tokens
         self.ent_anns = doc_dict["ner"]
         self.rel_anns = doc_dict["relations"]
 
@@ -28,9 +28,9 @@ class Document():
         Returns a dictionary with unigram, bigram, and trigram vocab for the
         document
         """
-        unigrams = list(self.uni_vocab)
-        bigrams = ['_'.join(ngr) for ngr in ngrams(unigrams, 2)]
-        trigrams = ['_'.join(ngr) for ngr in ngrams(unigrams, 3)]
+        unigrams = set(self.uni_vocab)
+        bigrams = set(['_'.join(ngr) for ngr in ngrams(self.uni_vocab, 2)])
+        trigrams = set(['_'.join(ngr) for ngr in ngrams(self.uni_vocab, 3)])
 
         vocab = {'unigrams': unigrams, 'bigrams': bigrams, 'trigrams':
                 trigrams}
