@@ -21,7 +21,7 @@ In all examples below, we are using the `pickle` environment unless otherwise sp
 ### Dataset pre-processing
 We used the data preprocessing code from the DyGIE++ repository to get the SciERC, ChemProt, and GENIA datasets, whihc automatically pulls the data from the web and processes it.
 
-The PICKLE dataset is available from both Zenodo (in brat and jsonl format; link will become available upon publication) and Huggingface (jsonl format). We recommend using the Hugginface version (or the jsonl version from Zenodo), as all of the necessary pre-processing has been completed. However, if you would like to reproduce the preprocessing sets from the original brat dataset, these are the steps:
+The PICKLE dataset is available from both Zenodo (in brat and jsonl format; link will become available upon publication) and [Huggingface](https://huggingface.co/datasets/slotreck/pickle) (jsonl format). We recommend using the Hugginface version (or the jsonl version from Zenodo), as all of the necessary pre-processing has been completed. However, if you would like to reproduce the preprocessing sets from the original brat dataset, these are the steps:
 1. Run [`brat_to_input.py`](https://github.com/dwadden/dygiepp#updates) from the DyGIE++ repository:
 ```
 python brat_to_input.py path/to/brat/data/dir save/path.jsonl dataset_name --use-scispacy
