@@ -9,7 +9,7 @@ import json
 import jsonlines
 
 
-def main(data_path, type_map):
+def main(data_path, type_map, filter_to_name):
 
     # Read in data
     print('\nReading in original dataset...')
@@ -29,7 +29,7 @@ def main(data_path, type_map):
     for doc in data:
         updated_doc = {}
         for key, value in doc.items():
-            if key != 'ner':
+            if (key != 'ner') and (key != 'predicted_ner'):
                 updated_doc[key] = value
             else:
                 updated_ner = []
@@ -45,7 +45,7 @@ def main(data_path, type_map):
         filtered.append(updated_doc)
 
     # Save
-    savename = splitext(data_path)[0] + '_FILTERED_TO_GENIA' + splitext(data_path)[1]
+    savename = splitext(data_path)[0] + '_FILTERED_TO_' + filter_to_name + splitext(data_path)[1]
     print(f'\nSaving out filtered dataset to {savename}')
     with jsonlines.open(savename, 'w') as writer:
         writer.write_all(filtered)
@@ -53,16 +53,18 @@ def main(data_path, type_map):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Filter PICKLE')
+    parser = argparse.ArgumentParser(description='Filter datasets')
 
     parser.add_argument('data_path', type=str,
             help='Path to dataset to filter')
     parser.add_argument('type_map', type=str,
             help='Path to type map')
+    parser.add_argument('filter_to_name', type=str,
+            help='Name to append to new filename')
 
     args = parser.parse_args()
 
     args.data_path = abspath(args.data_path)
     args.type_map = abspath(args.type_map)
 
-    main(args.data_path, args.type_map)
+    main(args.data_path, args.type_map, args.filter_to_name)
