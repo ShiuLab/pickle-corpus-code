@@ -22,6 +22,12 @@ def main(data_path, type_map, filter_to_name):
     print('\nReading in type map...')
     with open(type_map) as myf:
         type_map_dict = json.load(myf)
+    map_vals = []
+    for k, v in type_map_dict.items():
+        if isinstance(v, str):
+            map_vals.append(v.lower())
+        elif isinstance(v, list):
+            map_vals.extend([i.lower() for i in v])
 
     # Filter
     print('\nFiltering dataset...')
@@ -36,7 +42,7 @@ def main(data_path, type_map, filter_to_name):
                 for sent in value:
                     updated_sent = []
                     for ent in sent:
-                        if ent[2].lower() in [t.lower() for t in type_map_dict.values()]:
+                        if ent[2].lower() in map_vals:
                             if ent[2].lower() == 'cell':
                                 ent[2] = 'cell_type'
                             updated_sent.append(ent)

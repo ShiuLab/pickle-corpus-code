@@ -1,6 +1,1 @@
-{
-    "CHEMICAL": "Organic_compound_other",
-    "GENE": "DNA",
-    "GENE-Y": "DNA",
-    "GENE-N": "DNA"
-}
+{"CHEMICAL": ["Organic_compound_other", "Inorganic_compound_other", "Plant_hormone", "Element"], "GENE": ["DNA", "Protein"], "GENE-Y": "DNA", "GENE-N": "DNA"}
