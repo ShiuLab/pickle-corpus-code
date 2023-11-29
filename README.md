@@ -1,5 +1,16 @@
 # pickle-corpus-code
-Code for the project *In a PICKLE: A gold standard entity and relation corpus for the molecular plant sciences*
+Code for the project [*In a PICKLE: A gold standard entity and relation corpus for the molecular plant sciences*](https://academic.oup.com/insilicoplants/advance-article/doi/10.1093/insilicoplants/diad021/7413143). To cite this project:
+
+```
+@article{lotreck2023pickle,
+  title={In a PICKLE: A gold standard entity and relation corpus for the molecular plant sciences},
+  author={Lotreck, Serena and Segura Ab{\'a}, Kenia and Lehti-Shiu, Melissa and Seeger, Abigail and Brown, Brianna NI and Ranaweera, Thilanka and Schumacher, Ally and Ghassemi, Mohammad and Shiu, Shin-Han},
+  journal={in silico Plants},
+  pages={diad021},
+  year={2023},
+  publisher={Oxford University Press UK}
+}
+```
 
 ## Respository table of contents
 * `annotation`: Contains scripts for annotation-related tasks. These include utility scripts (`abstract_scripts`), scripts to calulate IAA (`iaa`), and the most recent version of the `annotation.conf` files used for annotation in brat (`brat`)
