@@ -1,14 +1,21 @@
 # pickle-corpus-code
-Code for the project [*In a PICKLE: A gold standard entity and relation corpus for the molecular plant sciences*](https://academic.oup.com/insilicoplants/advance-article/doi/10.1093/insilicoplants/diad021/7413143). To cite this project:
+Code for the project [*Plant Science Knowledge Graph Corpus: a gold standard entity and relation corpus for the molecular plant sciences*](https://academic.oup.com/insilicoplants/advance-article/doi/10.1093/insilicoplants/diad021/7413143). To cite this project:
+
 
 ```
-@article{lotreck2023pickle,
-  title={In a PICKLE: A gold standard entity and relation corpus for the molecular plant sciences},
-  author={Lotreck, Serena and Segura Ab{\'a}, Kenia and Lehti-Shiu, Melissa and Seeger, Abigail and Brown, Brianna NI and Ranaweera, Thilanka and Schumacher, Ally and Ghassemi, Mohammad and Shiu, Shin-Han},
-  journal={in silico Plants},
-  pages={diad021},
-  year={2023},
-  publisher={Oxford University Press UK}
+@article{10.1093/insilicoplants/diad021,
+    author = {Lotreck, Serena and Segura Abá, Kenia and Lehti-Shiu, Melissa D and Seeger, Abigail and Brown, Brianna N I and Ranaweera, Thilanka and Schumacher, Ally and Ghassemi, Mohammad and Shiu, Shin-Han},
+    title = "{Plant Science Knowledge Graph Corpus: a gold standard entity and relation corpus for the molecular plant sciences}",
+    journal = {in silico Plants},
+    volume = {6},
+    number = {1},
+    pages = {diad021},
+    year = {2023},
+    month = {11},
+    issn = {2517-5025},
+    doi = {10.1093/insilicoplants/diad021},
+    url = {https://doi.org/10.1093/insilicoplants/diad021},
+    eprint = {https://academic.oup.com/insilicoplants/article-pdf/6/1/diad021/54538980/diad021.pdf},
 }
 ```
 
